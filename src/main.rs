@@ -1,55 +1,73 @@
-use clashvision::enums::clash_class::ClashClass;
-use clashvision::structs::yolo_model::YoloModel;
-use std::path::Path;
+use anyhow::{anyhow, Result};
+use image::Rgb;
+use imageproc::drawing::{draw_hollow_rect_mut, draw_text_mut};
+use imageproc::rect::Rect;
+use rusttype::{Font, Scale};
+use clashvision::structs::detection::Detection;
+use clashvision::structs::yolo_model::YOLOModel;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+// Class names for your 2 classes - modify these according to your model
+const CLASS_NAMES: [&str; 2] = ["class_0", "class_1"];
 
-    let start = std::time::Instant::now();
+// Colors for different classes
+const COLORS: [(u8, u8, u8); 2] = [
+    (255, 0, 0), // Red for class 0
+    (0, 255, 0), // Green for class 1
+];
 
-    let model_path = Path::new("/Users/maximecolliat/PycharmProjects/PythonProject/ClashVision/models/v1/best_ir9_opset19.onnx"); // Convert your .pt to .onnx first
-    let val_images_dir = Path::new("/Users/maximecolliat/PycharmProjects/PythonProject/ClashVision/data/images/val");
-    let output_dir = Path::new("inference_results");
+// Alternative version without external font dependency
+fn draw_detections_simple(image_path: &str, detections: &[Detection], output_path: &str) -> Result<()> {
+    let mut img = image::open(image_path)?.to_rgb8();
 
-    // COCO class names (you should load this from your dataset config)
-    let class_names = ClashClass::values()
-        .iter()
-        .map(|c| c.as_str().to_owned())
-        .collect::<Vec<String>>();
+    for detection in detections {
+        let bbox = &detection.bbox;
+        let class_name = CLASS_NAMES[detection.class_id];
+        let color = COLORS[detection.class_id];
+        let rgb_color = Rgb([color.0, color.1, color.2]);
 
-    // Load the model
-    println!("Loading model from: {:?}", model_path);
-    let mut model = YoloModel::new(model_path, class_names)?;
+        // Draw bounding box (thicker lines)
+        let rect = Rect::at(bbox[0] as i32, bbox[1] as i32)
+            .of_size((bbox[2] - bbox[0]) as u32, (bbox[3] - bbox[1]) as u32);
 
-    // Run inference on directory
-    if val_images_dir.exists() {
-        println!("Running inference on validation images...");
-        let results_summary = model.run_inference_on_directory(val_images_dir, output_dir)?;
-
-        // Print summary
-        println!("\nInference completed! Results saved to: {:?}", output_dir);
-        println!("Processed {} images", results_summary.len());
-
-        let total_detections: usize = results_summary.iter().map(|r| r.num_detections).sum();
-        println!("Total detections: {}", total_detections);
-
-        // Print per-image summary
-        for result in &results_summary {
-            println!(
-                "{}: {} detections",
-                result.image_name, result.num_detections
+        // Draw multiple rectangles for thicker lines
+        for offset in 0..3 {
+            let thick_rect = Rect::at(
+                (bbox[0] as i32).saturating_sub(offset),
+                (bbox[1] as i32).saturating_sub(offset)
+            ).of_size(
+                (bbox[2] - bbox[0]) as u32 + (2 * offset) as u32,
+                (bbox[3] - bbox[1]) as u32 + (2 * offset) as u32
             );
+            draw_hollow_rect_mut(&mut img, thick_rect, rgb_color);
         }
-    } else {
+
         println!(
-            "Validation images directory not found: {:?}",
-            val_images_dir
+            "Detected {}: confidence={:.3}, bbox=[{:.1}, {:.1}, {:.1}, {:.1}]",
+            class_name, detection.confidence, bbox[0], bbox[1], bbox[2], bbox[3]
         );
-        println!("Please add some images to test inference");
     }
 
-    let duration = start.elapsed();
-    println!("Time elapsed in expensive_function() is: {:?}", duration);
+    img.save(output_path)?;
+    println!("Saved result to: {}", output_path);
+
+    Ok(())
+}
+
+fn main() -> Result<()> {
+    let model_path = "/Users/maximecolliat/PycharmProjects/PythonProject/ClashVision/models/v1/best.torchscript";
+    let input_image = "/Users/maximecolliat/PycharmProjects/PythonProject/ClashVision/data/images/val/village_1759335821.png"; // Change this to your input image path
+    let output_image = "output_with_detections.jpg";
+
+    println!("Loading YOLOv8 model...");
+    let model = YOLOModel::new(model_path)?;
+
+    println!("Running inference on image: {}", input_image);
+    let detections = model.inference(input_image)?;
+
+    println!("Found {} detections", detections.len());
+
+    // Draw and save results
+    draw_detections_simple(input_image, &detections, output_image)?;
 
     Ok(())
 }
