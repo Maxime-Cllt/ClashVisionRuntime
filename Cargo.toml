@@ -1,0 +1,54 @@
+[package]
+name = "ClashVisionRuntime"
+version = "0.1.0"
+license = "GPL-3"
+repository = "https://github.com/Maxime-Cllt/DataLint.git"
+categories = ["accessibility", "command-line-interface"]
+keywords = ["machine-learning", "ai", "computer-vision", "image-processing", "onnx"]
+authors = ["Maxime-Cllt"]
+edition = "2024"
+
+
+[dependencies]
+ort = "1.16.3"
+image = "0.25.8"
+ndarray = "0.15"
+tokio = { version = "1.0", features = ["full"] }
+imageproc = "0.25"
+rusttype = "0.9"
+
+[dev-dependencies]
+criterion = "0.7.0"
+
+
+[lib]
+name = "clashvision"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[profile.dev]
+# Development profile for debug builds
+opt-level = 0  # No optimizations, better debugging info
+debug = true  # Generate debug info
+overflow-checks = true  # Enable overflow checks for safer code
+lto = false  # Disable Link Time Optimization for faster compilation
+panic = "unwind" # Use unwind strategy to get better backtraces
+
+[profile.test]
+# Test profile for optimized builds
+incremental = true  # Enable incremental compilation for faster test builds
+opt-level = 1  # Optimize for speed, but not as much as release
+debug = false  # No debug info in test builds
+overflow-checks = true  # Enable overflow checks for safer code
+lto = false  # Disable Link Time Optimization for faster compilation
+
+[profile.release]
+# Release profile for optimized builds
+incremental = false
+opt-level = 3  # Optimize for speed
+debug = false  # No debug info in release builds
+lto = "fat"    # Better than just `true` for performance
+codegen-units = 1  # Merge codegen units for better optimization (can increase compile time)
+overflow-checks = false  # Disable overflow checks for performance
+panic = "abort" # Use unwind strategy to get better backtraces.
+strip = "symbols"     # Strip debug symbols to reduce binary size
