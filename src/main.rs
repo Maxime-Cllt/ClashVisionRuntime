@@ -1,13 +1,12 @@
-use anyhow::{anyhow, Result};
-use image::Rgb;
-use imageproc::drawing::{draw_hollow_rect_mut, draw_text_mut};
-use imageproc::rect::Rect;
-use rusttype::{Font, Scale};
+use anyhow::Result;
+use clashvision::enums::clash_class::ClashClass;
 use clashvision::structs::detection::Detection;
 use clashvision::structs::yolo_model::YOLOModel;
+use image::{Rgb, RgbImage};
+use imageproc::drawing::draw_hollow_rect_mut;
+use imageproc::rect::Rect;
 
 // Class names for your 2 classes - modify these according to your model
-const CLASS_NAMES: [&str; 2] = ["class_0", "class_1"];
 
 // Colors for different classes
 const COLORS: [(u8, u8, u8); 2] = [
@@ -16,43 +15,45 @@ const COLORS: [(u8, u8, u8); 2] = [
 ];
 
 // Alternative version without external font dependency
-fn draw_detections_simple(image_path: &str, detections: &[Detection], output_path: &str) -> Result<()> {
-    let mut img = image::open(image_path)?.to_rgb8();
+/// Draw bounding boxes safely
+pub fn draw_detections_simple(image_path: &str, detections: &[Detection], output_path: &str) -> Result<()> {
+    let mut img: RgbImage = image::open(image_path)?.to_rgb8();
 
-    for detection in detections {
-        let bbox = &detection.bbox;
-        let class_name = CLASS_NAMES[detection.class_id];
-        let color = COLORS[detection.class_id];
+    let class_names: Vec<&str> = ClashClass::values().iter().map(|c| c.as_str()).collect();
+
+    for det in detections {
+        let bbox = det.bbox;
+        let class_id = det.class_id;
+
+
+        let class_name = if class_id >= class_names.len() {
+            "Unknown"
+        }
+        else { class_names[class_id] };
+
+
+        let color = if class_id < COLORS.len() {
+            COLORS[class_id]
+        } else {
+            (255, 255, 255) // White for unknown classes
+        };
         let rgb_color = Rgb([color.0, color.1, color.2]);
 
-        // Draw bounding box (thicker lines)
         let rect = Rect::at(bbox[0] as i32, bbox[1] as i32)
-            .of_size((bbox[2] - bbox[0]) as u32, (bbox[3] - bbox[1]) as u32);
+            .of_size((bbox[2] - bbox[0]).max(1.0) as u32, (bbox[3] - bbox[1]).max(1.0) as u32);
 
-        // Draw multiple rectangles for thicker lines
-        for offset in 0..3 {
-            let thick_rect = Rect::at(
-                (bbox[0] as i32).saturating_sub(offset),
-                (bbox[1] as i32).saturating_sub(offset)
-            ).of_size(
-                (bbox[2] - bbox[0]) as u32 + (2 * offset) as u32,
-                (bbox[3] - bbox[1]) as u32 + (2 * offset) as u32
-            );
-            draw_hollow_rect_mut(&mut img, thick_rect, rgb_color);
-        }
+        draw_hollow_rect_mut(&mut img, rect, rgb_color);
 
         println!(
-            "Detected {}: confidence={:.3}, bbox=[{:.1}, {:.1}, {:.1}, {:.1}]",
-            class_name, detection.confidence, bbox[0], bbox[1], bbox[2], bbox[3]
+            "Detected {}: conf={:.2}, bbox=[{:.1}, {:.1}, {:.1}, {:.1}]",
+            class_name, det.confidence, bbox[0], bbox[1], bbox[2], bbox[3]
         );
     }
 
     img.save(output_path)?;
-    println!("Saved result to: {}", output_path);
-
+    println!("✅ Saved result to {}", output_path);
     Ok(())
 }
-
 fn main() -> Result<()> {
     let model_path = "/Users/maximecolliat/PycharmProjects/PythonProject/ClashVision/models/v1/best.torchscript";
     let input_image = "/Users/maximecolliat/PycharmProjects/PythonProject/ClashVision/data/images/val/village_1759335821.png"; // Change this to your input image path
