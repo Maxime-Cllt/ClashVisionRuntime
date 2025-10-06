@@ -1,7 +1,7 @@
 //! YOLO session management with improved error handling and performance
 
 use crate::detection::nms::{nms, nms_per_class};
-use crate::detection::output::output_to_yolo_txt_normalized;
+use crate::detection::output::OutputFormat;
 use crate::detection::visualization::{draw_boxes, DrawConfig};
 use crate::detection::BoundingBox;
 use crate::image::image_util::load_image_u8_default;
@@ -147,9 +147,11 @@ impl YoloSession {
         boxes: &[BoundingBox],
         image_path: &str,
         output_dir: Option<&str>,
+        format: Option<OutputFormat>,
     ) -> Result<(), SessionError> {
         let output_dir_str = output_dir.unwrap_or("output");
         let output_dir = Path::new(output_dir_str);
+        let format = format.unwrap_or_default();
 
         if !output_dir.exists() {
             std::fs::create_dir_all(output_dir)?;
@@ -160,7 +162,11 @@ impl YoloSession {
             .ok_or_else(|| SessionError::ImageProcessing("Invalid image path".to_string()))?;
 
         let image_output_path = output_dir.join(format!("{}.jpg", file_name.to_string_lossy()));
-        let txt_output_path = output_dir.join(format!("{}.txt", file_name.to_string_lossy()));
+        let output_path = output_dir.join(format!(
+            "{}.{}",
+            file_name.to_string_lossy(),
+            format.extension()
+        ));
 
         // Save image
         image
@@ -168,13 +174,7 @@ impl YoloSession {
             .map_err(|e| SessionError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
 
         // Save YOLO format detections
-        let (image_width, image_height) = image.dimensions();
-        output_to_yolo_txt_normalized(
-            boxes.to_vec(),
-            image_width,
-            image_height,
-            txt_output_path.to_str().unwrap(),
-        )?;
+        OutputFormat::output_detections(boxes, image.dimensions(), &output_path, Some(format))?;
 
         Ok(())
     }
@@ -211,7 +211,13 @@ impl YoloSession {
             self.config.input_size,
         );
 
-        self.save_outputs(&result_image, &inferred_boxes, image_path, output_dir)?;
+        self.save_outputs(
+            &result_image,
+            &inferred_boxes,
+            image_path,
+            output_dir,
+            Some(OutputFormat::Json),
+        )?;
 
         Ok(())
     }

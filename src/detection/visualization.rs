@@ -106,6 +106,13 @@ fn draw_single_box(
         a: 0xFF,
     });
 
+    #[cfg(debug_assertions)]{
+        println!(
+            "Drawing box: class_id={}, x1={}, y1={}, x2={}, y2={}, color={:?}",
+            bbox.class_id, bbox.x1, bbox.y1, bbox.x2, bbox.y2, color
+        );
+    }
+
     let stroke_style = StrokeStyle {
         join: LineJoin::Round,
         width: config.line_width,
