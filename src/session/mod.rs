@@ -1,7 +1,6 @@
 use thiserror::Error;
 
 pub mod ort_inference_session;
-mod inference;
 pub mod yolo_session;
 
 /// Session-specific errors

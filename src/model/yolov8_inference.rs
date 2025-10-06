@@ -1,17 +1,12 @@
-//! Inference logic for different YOLO models
-
 use ndarray::Array;
 use crate::detection::BoundingBox;
-
-/// Trait for YOLO model inference
-pub trait YoloInference {
-    fn parse_output(&self, output: &Array<f32, ndarray::IxDyn>, confidence_threshold: f32) -> Vec<BoundingBox>;
-}
+use crate::model::inference::YoloInference;
 
 /// YOLOv8 inference implementation
 pub struct Yolov8Inference;
 
 impl YoloInference for Yolov8Inference {
+    
     fn parse_output(&self, output: &Array<f32, ndarray::IxDyn>, confidence_threshold: f32) -> Vec<BoundingBox> {
         let shape = output.shape();
         let reshaped_output = output
@@ -45,46 +40,5 @@ impl YoloInference for Yolov8Inference {
         }
 
         boxes
-    }
-}
-
-/// YOLOv10 inference implementation
-pub struct Yolov10Inference;
-
-impl YoloInference for Yolov10Inference {
-    fn parse_output(&self, output: &Array<f32, ndarray::IxDyn>, confidence_threshold: f32) -> Vec<BoundingBox> {
-        let shape = output.shape();
-        let reshaped_output = output
-            .to_shape((shape[1], shape[2]))
-            .expect("Failed to reshape YOLOv10 output");
-
-        let mut boxes = Vec::with_capacity(reshaped_output.shape()[0]);
-
-        for detection in reshaped_output.outer_iter() {
-            let confidence = detection[4];
-
-            if confidence >= confidence_threshold {
-                let bbox = BoundingBox::new(
-                    detection[0],
-                    detection[1],
-                    detection[2],
-                    detection[3],
-                    detection[5] as usize,
-                    confidence,
-                );
-                boxes.push(bbox);
-            }
-        }
-
-        boxes
-    }
-}
-
-/// Factory function to create appropriate inference implementation
-pub fn create_inference(model_name: &str) -> Box<dyn YoloInference> {
-    match model_name.to_lowercase().as_str() {
-        "yolov8" => Box::new(Yolov8Inference),
-        "yolov10" => Box::new(Yolov10Inference),
-        _ => panic!("Unsupported model: {}. Supported models: yolov8, yolov10", model_name),
     }
 }

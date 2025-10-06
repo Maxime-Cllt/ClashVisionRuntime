@@ -11,7 +11,7 @@ use crate::detection::BoundingBox;
 use crate::detection::nms::{nms, nms_per_class};
 use crate::detection::output::output_to_yolo_txt_normalized;
 use crate::detection::visualization::{draw_boxes, DrawConfig};
-use crate::session::inference::{create_inference, YoloInference};
+use crate::model::inference::{create_inference, YoloInference};
 use crate::session::ort_inference_session::OrtInferenceSession;
 use crate::session::SessionError;
 
