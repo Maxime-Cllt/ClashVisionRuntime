@@ -1,28 +1,30 @@
+use super::yolo_utils::*;
+use crate::dnn::ort_inference_session::OrtInferenceSession;
+use crate::image::image_util::{load_image_u8, normalize_image_f32, LoadedImageU8};
 use image::{DynamicImage, RgbImage};
 use ndarray::{Array, Array4};
-use std::path::Path;
 use ort::session::SessionOutputs;
-use super::yolo_utils::*;
-use crate::image::image_util::{load_image_u8, normalize_image_f32, LoadedImageU8};
-use crate::{
-    dnn::ort_inference_session::OrtInferenceSession,
-};
+use std::path::Path;
 
+/// YOLO session struct for managing model inference and image processing.
+#[must_use]
+#[non_exhaustive]
 pub struct YoloSession {
     session: OrtInferenceSession,
-    input_size: (u32, u32),
-    use_nms: bool,
-    model_name: String,
+    input_size: (u32, u32), // (width, height)
+    use_nms: bool,          // Whether to apply Non-Maximum Suppression
+    model_name: String,     // Model name (e.g., "yolov8", "yolov10")
 }
 
 impl YoloSession {
+    /// Creates a new YOLO session with the specified model path, input size, NMS option, and model name.
     pub fn new(
-        model_path: &Path,
+        model_path: &str,
         input_size: (u32, u32),
         use_nms: bool,
         model_name: String,
     ) -> ort::Result<Self> {
-        let session = OrtInferenceSession::new(model_path)?;
+        let session = OrtInferenceSession::new(Path::new(model_path))?;
         Ok(YoloSession {
             session,
             input_size,
@@ -32,7 +34,8 @@ impl YoloSession {
     }
 
     pub fn run_inference(&mut self, input_tensor: Array4<f32>) -> Vec<BoundingBox> {
-        let outputs: SessionOutputs = self.session
+        let outputs: SessionOutputs = self
+            .session
             .run_inference(input_tensor)
             .expect("Inference failed");
 

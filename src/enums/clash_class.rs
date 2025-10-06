@@ -30,6 +30,20 @@ impl ClashClass {
         static VALUES: [ClashClass; 2] = [ClashClass::ElixirStorage, ClashClass::GoldStorage];
         &VALUES
     }
+
+    /// Returns the RGB color associated with the ClashClass variant.
+    pub fn to_color(&self) -> (u8, u8, u8) {
+        match self {
+            ClashClass::ElixirStorage => (255, 0, 255), // Purple
+            ClashClass::GoldStorage => (255, 215, 0),   // Gold
+        }
+    }
+
+    /// Returns a static slice of RGB colors corresponding to the ClashClass variants.
+    pub fn colors() -> &'static [(u8, u8, u8)] {
+        static COLORS: [(u8, u8, u8); 2] = [(255, 0, 255), (255, 215, 0)];
+        &COLORS
+    }
 }
 
 impl Debug for ClashClass {
@@ -67,5 +81,19 @@ mod tests {
         assert_eq!(values.len(), 2);
         assert_eq!(values[0], ClashClass::ElixirStorage);
         assert_eq!(values[1], ClashClass::GoldStorage);
+    }
+
+    #[test]
+    fn test_colors() {
+        assert_eq!(ClashClass::ElixirStorage.to_color(), (255, 0, 255));
+        assert_eq!(ClashClass::GoldStorage.to_color(), (255, 215, 0));
+    }
+
+    #[test]
+    fn test_colors_array() {
+        let colors = ClashClass::colors();
+        assert_eq!(colors.len(), 2);
+        assert_eq!(colors[0], (255, 0, 255));
+        assert_eq!(colors[1], (255, 215, 0));
     }
 }
