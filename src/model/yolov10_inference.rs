@@ -2,7 +2,7 @@ use crate::detection::BoundingBox;
 use crate::model::inference::YoloInference;
 use ndarray::Array;
 
-/// YOLOv10 inference implementation
+/// `YOLOv10` inference implementation
 pub struct Yolov10Inference;
 
 impl YoloInference for Yolov10Inference {

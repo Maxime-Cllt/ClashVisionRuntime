@@ -137,24 +137,3 @@ mod tests {
         assert!((iou - 0.142857).abs() < 0.001);
     }
 }
-
-/// YOLO format bounding box representation.
-#[derive(Debug, Clone, Copy)]
-pub struct YoloBox {
-    pub class_id: usize, // Class ID of the detected object
-    pub x_center: f32,   // Center x-coordinate (normalized)
-    pub y_center: f32,   // Center y-coordinate (normalized)
-    pub width: f32,      // Width of the bounding box
-    pub height: f32,     // Width of the bounding box
-    pub confidence: f32, // Optional confidence score
-}
-
-impl std::fmt::Display for YoloBox {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{} {:.6} {:.6} {:.6} {:.6}",
-            self.class_id, self.x_center, self.y_center, self.width, self.height
-        )
-    }
-}

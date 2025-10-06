@@ -2,13 +2,14 @@ use std::fmt::Debug;
 
 /// This file is part of a Clash of Clans related project.
 #[derive(PartialEq, Eq)]
+#[must_use]
 pub enum ClashClass {
     ElixirStorage = 0,
     GoldStorage = 1,
 }
 
 impl ClashClass {
-    /// Returns the string representation of the ClashClass variant.
+    /// Returns the string representation of the `ClashClass` variant.
     pub fn as_str(&self) -> &'static str {
         match self {
             ClashClass::ElixirStorage => "Elixir Storage",

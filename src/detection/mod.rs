@@ -1,11 +1,9 @@
-pub mod bbox;
+ mod bbox;
 pub mod nms;
 pub mod output;
-mod utils;
 pub mod visualization;
 
 pub use bbox::BoundingBox;
-pub use visualization::draw_bounding_boxes;
 
 /// Errors that can occur during detection operations
 #[derive(Debug, thiserror::Error)]

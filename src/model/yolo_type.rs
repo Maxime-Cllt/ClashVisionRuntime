@@ -9,7 +9,8 @@ pub enum YoloType {
 
 impl YoloType {
     /// Returns the string representation of the YoloType variant.
-    pub fn as_str(&self) -> &'static str {
+    #[inline]
+    pub const fn as_str(&self) -> &'static str {
         match self {
             YoloType::YoloV8 => "YoloV8",
             YoloType::YoloV10 => "YoloV10",
@@ -22,8 +23,8 @@ impl TryFrom<&str> for YoloType {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
-            "yolov8" => Ok(YoloType::YoloV8),
-            "yolov10" => Ok(YoloType::YoloV10),
+            "yolov8" => Ok(Self::YoloV8),
+            "yolov10" => Ok(Self::YoloV10),
             _ => Err(()),
         }
     }

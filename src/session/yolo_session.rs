@@ -1,15 +1,15 @@
 //! YOLO session management with improved error handling and performance
 
-use crate::detection::BoundingBox;
 use crate::detection::nms::{nms, nms_per_class};
 use crate::detection::output::output_to_yolo_txt_normalized;
-use crate::detection::visualization::{DrawConfig, draw_boxes};
+use crate::detection::visualization::{draw_boxes, DrawConfig};
+use crate::detection::BoundingBox;
 use crate::image::image_util::load_image_u8_default;
 use crate::image::image_util::normalize_image_f32;
 use crate::image::loaded_image::LoadedImageU8;
-use crate::model::inference::{YoloInference, create_inference};
-use crate::session::SessionError;
+use crate::model::inference::{create_inference, YoloInference};
 use crate::session::ort_inference_session::OrtInferenceSession;
+use crate::session::SessionError;
 use image::{DynamicImage, RgbImage};
 use ndarray::Array4;
 use ort::session::SessionOutputs;
@@ -122,7 +122,7 @@ impl YoloSession {
                 loaded_image.size.height as usize,
                 loaded_image.size.width as usize,
             ))
-            .map_err(|e| SessionError::ImageProcessing(format!("Failed to reshape image: {}", e)))?
+            .map_err(|e| SessionError::ImageProcessing(format!("Failed to reshape image: {e}")))?
             .permuted_axes((1, 2, 0))
             .iter()
             .copied()
@@ -237,6 +237,7 @@ impl YoloSession {
     }
 
     /// Returns inference statistics
+    #[must_use]
     pub fn get_model_info(&self) -> ModelInfo {
         ModelInfo {
             model_name: self.model_name.clone(),

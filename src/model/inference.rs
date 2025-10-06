@@ -17,6 +17,7 @@ pub trait YoloInference {
 }
 
 /// Factory function to create appropriate inference implementation
+#[must_use]
 pub fn create_inference(model_name: &str) -> Box<dyn YoloInference> {
     match YoloType::try_from(model_name) {
         Ok(YoloType::YoloV8) => Box::new(Yolov8Inference),
