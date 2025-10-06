@@ -16,7 +16,10 @@ pub fn group_by_class(boxes: &[BoundingBox]) -> std::collections::HashMap<usize,
     let mut grouped = std::collections::HashMap::new();
 
     for bbox in boxes {
-        grouped.entry(bbox.class_id).or_insert_with(Vec::new).push(*bbox);
+        grouped
+            .entry(bbox.class_id)
+            .or_insert_with(Vec::new)
+            .push(*bbox);
     }
 
     grouped

@@ -95,7 +95,7 @@ pub fn export_to_json<P: AsRef<Path>>(
     struct JsonDetection {
         class_id: usize,
         confidence: f32,
-        bbox: [f32; 4], // [x1, y1, x2, y2]
+        bbox: [f32; 4],            // [x1, y1, x2, y2]
         normalized_bbox: [f32; 4], // [x1, y1, x2, y2] normalized to [0, 1]
     }
 
@@ -115,11 +115,12 @@ pub fn export_to_json<P: AsRef<Path>>(
         })
         .collect();
 
-    let json_output = serde_json::to_string_pretty(&detections)
-        .map_err(|e| DetectionError::IoError(std::io::Error::new(
+    let json_output = serde_json::to_string_pretty(&detections).map_err(|e| {
+        DetectionError::IoError(std::io::Error::new(
             std::io::ErrorKind::InvalidData,
             format!("JSON serialization error: {}", e),
-        )))?;
+        ))
+    })?;
 
     std::fs::write(output_path, json_output)?;
     Ok(())

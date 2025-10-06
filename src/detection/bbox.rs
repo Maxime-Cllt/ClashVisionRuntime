@@ -4,6 +4,7 @@ use super::DetectionError;
 
 /// Represents a bounding box with coordinates, class ID, and confidence score.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[must_use]
 pub struct BoundingBox {
     pub x1: f32,
     pub y1: f32,
@@ -102,12 +103,12 @@ impl BoundingBox {
 /// YOLO format bounding box representation.
 #[derive(Debug, Clone, Copy)]
 pub struct YoloBox {
-    pub class_id: usize,
-    pub x_center: f32,
-    pub y_center: f32,
-    pub width: f32,
-    pub height: f32,
-    pub confidence: f32,
+    pub class_id: usize, // Class ID of the detected object
+    pub x_center: f32,   // Center x-coordinate (normalized)
+    pub y_center: f32,   // Center y-coordinate (normalized)
+    pub width: f32,      // Width of the bounding box
+    pub height: f32,     // Width of the bounding box
+    pub confidence: f32, // Optional confidence score
 }
 
 impl std::fmt::Display for YoloBox {

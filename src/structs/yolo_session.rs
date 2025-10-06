@@ -3,7 +3,7 @@ use crate::detection::nms::nms;
 use crate::detection::output::output_to_yolo_txt;
 use crate::detection::visualization::draw_boxes;
 use crate::dnn::ort_inference_session::OrtInferenceSession;
-use crate::image::image_util::{load_image_u8, normalize_image_f32, LoadedImageU8};
+use crate::image::image_util::{LoadedImageU8, load_image_u8, normalize_image_f32};
 use image::{DynamicImage, RgbImage};
 use ndarray::{Array, Array4};
 use ort::session::SessionOutputs;
@@ -54,7 +54,11 @@ impl YoloSession {
             .expect("Failed to build ndarray from tensor");
 
         let mut boxes = Vec::new();
-        println!("output shape: {:?}", output.shape());
+
+        #[cfg(debug_assertions)]
+        {
+            println!("output shape: {:?}", output.shape());
+        }
 
         let original_output_shape = output.shape();
 

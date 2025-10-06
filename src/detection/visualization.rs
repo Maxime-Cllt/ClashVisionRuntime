@@ -48,7 +48,14 @@ pub fn draw_bounding_boxes(
     let scale_y = img_height as f32 / input_size.1 as f32;
 
     for bbox in boxes {
-        draw_single_box(&mut draw_target, bbox, &class_colors, scale_x, scale_y, &config);
+        draw_single_box(
+            &mut draw_target,
+            bbox,
+            &class_colors,
+            scale_x,
+            scale_y,
+            &config,
+        );
     }
 
     blend_with_original_image(image, draw_target, config.alpha_blend)
@@ -101,7 +108,12 @@ fn draw_single_box(
         ..StrokeStyle::default()
     };
 
-    draw_target.stroke(&path, &Source::Solid(*color), &stroke_style, &DrawOptions::new());
+    draw_target.stroke(
+        &path,
+        &Source::Solid(*color),
+        &stroke_style,
+        &DrawOptions::new(),
+    );
 }
 
 /// Blends the drawn boxes with the original image.
@@ -121,7 +133,7 @@ fn blend_with_original_image(
             .flat_map(|pixel| pixel.to_ne_bytes())
             .collect(),
     )
-        .expect("Failed to create RGBA image from draw target");
+    .expect("Failed to create RGBA image from draw target");
 
     let mut result = original.to_rgb8();
 
@@ -142,8 +154,8 @@ fn blend_with_original_image(
 
         // Blend each color channel
         for i in 0..3 {
-            original_pixel[i] = ((rgba_pixel[i] as u16 * alpha +
-                original_pixel[i] as u16 * inv_alpha) / 255) as u8;
+            original_pixel[i] =
+                ((rgba_pixel[i] as u16 * alpha + original_pixel[i] as u16 * inv_alpha) / 255) as u8;
         }
     }
 
