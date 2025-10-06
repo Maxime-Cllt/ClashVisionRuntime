@@ -1,6 +1,6 @@
 <div align="center">
     <h1>ClashVisionRuntime</h1>
-    <p><em>High-performance CSV data validation and anomaly detection tool</em></p>
+    <p><em>Rust runtime for YOLOv8 model inference using ONNX Runtime on images for object detection in Clash of Clans.</em></p>
 </div>
 <div align="center">
   <!-- Rust -->
@@ -18,12 +18,15 @@
 
 ## 🚀 Overview
 
-**ClashVisionRuntime** is a production-ready
+**ClashVisionRuntime** is a high-performance Rust runtime designed for executing YOLOv8 models using ONNX Runtime. It specializes in object detection within images, making it ideal for applications such as analyzing game screenshots from Clash of Clans.
+
 
 ### ✨ Key Features
 
 - 🔍 **AI-Powered Detection**: Load and run YOLOv8 model for object detection in images.
 - ⚡ **High Performance**: Optimized for speed and efficiency using Rust.
+- 🖼️ **Image Processing**: Supports various image formats for input.
+- 📊 **Detailed Output**: Returns structured JSON reports with detection results on the images.
 
 ## 📋 Prerequisites
 

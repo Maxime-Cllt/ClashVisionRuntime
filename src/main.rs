@@ -4,7 +4,7 @@ use clashvision::structs::yolo_session::YoloSession;
 mod benches;
 
 fn main() {
-    let image_path = "/Users/maximecolliat/Downloads/img/village_1759583271.png";
+    let image_path = "assets/village_1759583099.png";
 
     let model_path: &str =
         "/Users/maximecolliat/PycharmProjects/PythonProject/ClashVision/models/v1/best.onnx";
