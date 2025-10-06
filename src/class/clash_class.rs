@@ -8,15 +8,6 @@ pub enum ClashClass {
 }
 
 impl ClashClass {
-    /// Converts a usize to a ClashClass variant, if possible.
-    pub fn from_usize(value: usize) -> Option<Self> {
-        match value {
-            0 => Some(ClashClass::ElixirStorage),
-            1 => Some(ClashClass::GoldStorage),
-            _ => None,
-        }
-    }
-
     /// Returns the string representation of the ClashClass variant.
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -32,17 +23,25 @@ impl ClashClass {
     }
 
     /// Returns the RGB color associated with the ClashClass variant.
-    pub fn to_color(&self) -> (u8, u8, u8) {
+    pub fn to_color(&self) -> (u8, u8, u8, u8) {
         match self {
-            ClashClass::ElixirStorage => (255, 0, 255), // Purple
-            ClashClass::GoldStorage => (255, 215, 0),   // Gold
+            ClashClass::ElixirStorage => (255, 0, 255, 255), // Magenta
+            ClashClass::GoldStorage => (212, 175, 55, 255),  // Gold
         }
     }
 
     /// Returns a static slice of RGB colors corresponding to the ClashClass variants.
-    pub fn colors() -> &'static [(u8, u8, u8)] {
-        static COLORS: [(u8, u8, u8); 2] = [(255, 0, 255), (255, 215, 0)];
+    pub fn colors() -> &'static [(u8, u8, u8, u8)] {
+        static COLORS: [(u8, u8, u8, u8); 2] = [
+            (255, 0, 255, 255),  // Magenta for Elixir Storage
+            (212, 175, 55, 255), // Gold for Gold Storage
+        ];
         &COLORS
+    }
+    
+    /// Returns the number of ClashClass variants.
+    pub fn num_classes() -> usize {
+        Self::values().len()
     }
 }
 
@@ -55,13 +54,6 @@ impl Debug for ClashClass {
 #[cfg(test)]
 mod tests {
     use super::ClashClass;
-
-    #[test]
-    fn test_from_usize() {
-        assert_eq!(ClashClass::from_usize(0), Some(ClashClass::ElixirStorage));
-        assert_eq!(ClashClass::from_usize(1), Some(ClashClass::GoldStorage));
-        assert_eq!(ClashClass::from_usize(2), None);
-    }
 
     #[test]
     fn test_as_str() {
@@ -85,15 +77,20 @@ mod tests {
 
     #[test]
     fn test_colors() {
-        assert_eq!(ClashClass::ElixirStorage.to_color(), (255, 0, 255));
-        assert_eq!(ClashClass::GoldStorage.to_color(), (255, 215, 0));
+        assert_eq!(ClashClass::ElixirStorage.to_color(), (255, 0, 255, 255));
+        assert_eq!(ClashClass::GoldStorage.to_color(), (212, 175, 55, 255));
     }
 
     #[test]
     fn test_colors_array() {
         let colors = ClashClass::colors();
         assert_eq!(colors.len(), 2);
-        assert_eq!(colors[0], (255, 0, 255));
-        assert_eq!(colors[1], (255, 215, 0));
+        assert_eq!(colors[0], (255, 0, 255, 255));
+        assert_eq!(colors[1], (212, 175, 55, 255));
+    }
+    
+    #[test]
+    fn test_num_classes() {
+        assert_eq!(ClashClass::num_classes(), 2);
     }
 }

@@ -6,6 +6,9 @@ use std::borrow::Cow;
 use std::path::Path;
 use std::time::Instant;
 
+/// ONNX Runtime inference session wrapper.
+#[must_use]
+#[non_exhaustive]
 pub struct OrtInferenceSession {
     session: Session,
 }
@@ -24,9 +27,9 @@ impl OrtInferenceSession {
     ) -> ort::Result<SessionOutputs<'_>> {
         let time_pre_compute = Instant::now();
 
-        let shape = input_image.shape().to_vec();
-        let raw_data = input_image.as_slice().unwrap().to_vec();
-        let input_tensor = Tensor::from_array((shape, raw_data.into_boxed_slice()))?;
+        let shape: Vec<usize> = input_image.shape().to_vec();
+        let raw_data: Vec<f32> = input_image.as_slice().unwrap().to_vec();
+        let input_tensor: Tensor<f32> = Tensor::from_array((shape, raw_data.into_boxed_slice()))?;
 
         let input_value: SessionInputValue = SessionInputValue::Owned(Value::from(input_tensor));
         let inputs: Vec<(Cow<str>, SessionInputValue)> =
@@ -35,10 +38,13 @@ impl OrtInferenceSession {
         let outputs: SessionOutputs = self.session.run(SessionInputs::from(inputs))?;
         let time_post_compute = Instant::now();
 
-        println!(
-            "Inference time: {:#?}",
-            time_post_compute - time_pre_compute
-        );
+        #[cfg(debug_assertions)]
+        {
+            println!(
+                "Inference time: {:#?}",
+                time_post_compute - time_pre_compute
+            );
+        }
 
         Ok(outputs)
     }

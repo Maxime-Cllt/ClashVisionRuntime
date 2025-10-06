@@ -1,14 +1,17 @@
-use clashvision::structs::yolo_session::YoloSession;
+use clashvision::session::yolo_session::YoloSession;
 use criterion::{criterion_group, criterion_main, Criterion};
 
 #[allow(dead_code)]
 fn bench_process_image() {
     const IMAGE_PATH: &str = "assets/village_1759583099.png";
-    const MODEL_PATH: &str = "models/v1/best.onnx";
-    let mut yolo_model = YoloSession::new(MODEL_PATH, (640, 640), false, "yolov8".to_string())
-        .expect("Failed to create YOLO model");
+    const MODEL_PATH: &str = "models/best.onnx";
 
-    yolo_model.process_image(IMAGE_PATH);
+    let mut yolo_model:YoloSession =
+        YoloSession::new(MODEL_PATH, "yolov8".into()).expect("Failed to create YOLO model");
+
+    yolo_model
+        .process_image(IMAGE_PATH)
+        .expect("Failed to process image");
 }
 
 #[allow(dead_code)]
