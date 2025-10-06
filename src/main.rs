@@ -4,13 +4,11 @@ use clashvision::structs::yolo_session::YoloSession;
 mod benches;
 
 fn main() {
-    let image_path = "assets/village_1759583099.png";
+    const IMAGE_PATH: &str = "assets/village_1759583099.png";
+    const MODEL_PATH: &str = "models/best.onnx";
 
-    let model_path: &str =
-        "/Users/maximecolliat/PycharmProjects/PythonProject/ClashVision/models/v1/best.onnx";
-
-    let mut yolo_model = YoloSession::new(model_path, (640, 640), false, "yolov8".to_string())
+    let mut yolo_model = YoloSession::new(MODEL_PATH, (640, 640), false, "yolov8".to_string())
         .expect("Failed to create YOLO model");
 
-    yolo_model.process_image(image_path);
+    yolo_model.process_image(IMAGE_PATH);
 }
