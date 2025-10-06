@@ -1,6 +1,6 @@
 [package]
 name = "ClashVisionRuntime"
-version = "0.1.0"
+version = "0.2.0"
 license = "GPL-3.0"
 repository = "https://github.com/Maxime-Cllt/DataLint.git"
 categories = ["accessibility", "command-line-interface"]
@@ -51,3 +51,9 @@ codegen-units = 1  # Merge codegen units for better optimization (can increase c
 overflow-checks = false  # Disable overflow checks for performance
 panic = "abort" # Use unwind strategy to get better backtraces.
 strip = "symbols"     # Strip debug symbols to reduce binary size
+
+
+[[bench]]
+name = "benchmark_application"
+harness = false
+path = "src/benches/application_bench.rs"
