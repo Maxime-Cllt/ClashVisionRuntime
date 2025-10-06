@@ -60,7 +60,8 @@ impl YoloSession {
         model_name: String,
         config: SessionConfig,
     ) -> Result<Self, SessionError> {
-        let session = OrtInferenceSession::new(Path::new(model_path))?;
+        let session = OrtInferenceSession::new(Path::new(model_path))
+            .map_err(|e| SessionError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
         let inference = create_inference(&model_name);
 
         Ok(Self {

@@ -63,15 +63,18 @@ pub fn draw_bounding_boxes(
 
 /// Generates colors for all unique classes in the bounding boxes.
 fn generate_colors_for_boxes(boxes: &[BoundingBox]) -> HashMap<usize, SolidSource> {
-    let unique_classes: std::collections::HashSet<usize> =
-        boxes.iter().map(|bbox| bbox.class_id).collect();
+    let unique_classes: Vec<usize> = boxes
+        .iter()
+        .map(|bbox| bbox.class_id)
+        .collect::<std::collections::HashSet<_>>()
+        .into_iter()
+        .collect();
 
     if unique_classes.is_empty() {
         return HashMap::new();
     }
 
-    let max_class_id = *unique_classes.iter().max().unwrap();
-    generate_color_for_classes(max_class_id + 1)
+    generate_color_for_classes()
 }
 
 /// Draws a single bounding box on the draw target.

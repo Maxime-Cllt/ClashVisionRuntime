@@ -1,6 +1,7 @@
 //! Inference logic for different YOLO models
 
 use crate::detection::BoundingBox;
+use crate::model::yolo_type::YoloType;
 use crate::model::yolov10_inference::Yolov10Inference;
 use crate::model::yolov8_inference::Yolov8Inference;
 use ndarray::Array;
@@ -17,13 +18,10 @@ pub trait YoloInference {
 
 /// Factory function to create appropriate inference implementation
 pub fn create_inference(model_name: &str) -> Box<dyn YoloInference> {
-    match model_name.to_lowercase().as_str() {
-        "yolov8" => Box::new(Yolov8Inference),
-        "yolov10" => Box::new(Yolov10Inference),
-        _ => panic!(
-            "Unsupported model: {}. Supported models: yolov8, yolov10",
-            model_name
-        ),
+    match YoloType::try_from(model_name) {
+        Ok(YoloType::YoloV8) => Box::new(Yolov8Inference),
+        Ok(YoloType::YoloV10) => Box::new(Yolov10Inference),
+        Err(()) => panic!("Unsupported model: {model_name}. Supported models: yolov8, yolov10"),
     }
 }
 

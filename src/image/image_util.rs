@@ -1,5 +1,6 @@
-use image::{ImageBuffer, ImageError, Pixel, Rgb, imageops::FilterType};
-use ndarray::{Array, ArrayBase, Dim, OwnedRepr, s};
+use crate::class::clash_class::ClashClass;
+use image::{imageops::FilterType, ImageBuffer, ImageError, Pixel, Rgb};
+use ndarray::{s, Array, ArrayBase, Dim, OwnedRepr};
 use raqote::SolidSource;
 use std::collections::HashMap;
 use std::fmt;
@@ -54,6 +55,7 @@ impl fmt::Debug for ImageSize {
     }
 }
 
+/// Loads an image from the specified path, resizes it to the target size while maintaining aspect ratio,
 pub fn load_image_u8(
     image_path: &str,
     target_size: (u32, u32),
@@ -105,6 +107,7 @@ pub fn load_image_u8(
     })
 }
 
+/// Normalizes the image using the provided mean and std deviation.
 pub fn normalize_image_f32(
     loaded_image: &LoadedImageU8,
     mean: Option<[f32; 3]>,
@@ -127,20 +130,14 @@ pub fn normalize_image_f32(
     }
 }
 
-pub fn generate_color_for_classes(num_classes: usize) -> HashMap<usize, SolidSource> {
-    let mut class_colors: HashMap<usize, SolidSource> = HashMap::new();
-    for class_id in 0..num_classes {
-        let hue = (class_id as f32 / num_classes as f32) * 360.0;
-        let (r, g, b) = hsv_to_rgb(hue, 1.0, 1.0); // Full saturation and brightness
-        class_colors.insert(
-            class_id,
-            SolidSource {
-                r: (r * 255.0) as u8,
-                g: (g * 255.0) as u8,
-                b: (b * 255.0) as u8,
-                a: 0xFF,
-            },
-        );
+/// Generates distinct colors for each class in ClashClass enum.
+pub fn generate_color_for_classes() -> HashMap<usize, SolidSource> {
+    let mut class_colors: HashMap<usize, SolidSource> =
+        HashMap::with_capacity(ClashClass::num_classes());
+    let colors = ClashClass::colors();
+    for (i, &color) in colors.iter().enumerate() {
+        let (r, g, b, a) = color;
+        class_colors.insert(i, SolidSource { r, g, b, a });
     }
     class_colors
 }
