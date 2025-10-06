@@ -6,11 +6,15 @@ use std::borrow::Cow;
 use std::path::Path;
 use std::time::Instant;
 
+/// ONNX Runtime inference session wrapper.
+#[must_use]
+#[non_exhaustive]
 pub struct OrtInferenceSession {
     session: Session,
 }
 
 impl OrtInferenceSession {
+
     /// Creates a new ONNX Runtime inference session from the specified model path.
     pub fn new(model_path: &Path) -> ort::Result<Self> {
         let session: Session = SessionBuilder::new()?.commit_from_file(model_path)?;

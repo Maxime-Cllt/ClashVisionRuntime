@@ -1,4 +1,7 @@
-use super::yolo_utils::*;
+use crate::detection::bbox::BoundingBox;
+use crate::detection::nms::nms;
+use crate::detection::output::output_to_yolo_txt;
+use crate::detection::visualization::draw_boxes;
 use crate::dnn::ort_inference_session::OrtInferenceSession;
 use crate::image::image_util::{load_image_u8, normalize_image_f32, LoadedImageU8};
 use image::{DynamicImage, RgbImage};
@@ -71,8 +74,9 @@ impl YoloSession {
                     y1: bbox_coords[1],
                     x2: bbox_coords[2],
                     y2: bbox_coords[3],
+                    // probability: object_confidence,
                     class_id,
-                    probability: object_confidence,
+                    confidence: object_confidence,
                 };
 
                 if object_confidence >= 0.25 {
@@ -112,7 +116,7 @@ impl YoloSession {
                         x2: x + w / 2.0,
                         y2: y + h / 2.0,
                         class_id: max_class_id,
-                        probability: max_class_prob,
+                        confidence: max_class_prob,
                     };
                     boxes.push(bbox);
                 }
@@ -184,6 +188,7 @@ impl YoloSession {
         );
     }
 
+    /// Processes an image: loads, preprocesses, runs inference, applies NMS (if enabled), draws boxes, and saves outputs.
     pub fn process_image(&mut self, image_path: &str) {
         let (original_image, loaded_image) = self.load_and_preprocess_image(image_path);
 
@@ -194,7 +199,7 @@ impl YoloSession {
         // you can use them for other models
         // XXX: it's not hard coded as "0.45", which is the default value for Ultralytics YOLOv8
         if self.use_nms {
-            inferred_boxes = nms(inferred_boxes, 0.45);
+            inferred_boxes = nms(&inferred_boxes, 0.45);
         }
 
         let result_image = draw_boxes(
