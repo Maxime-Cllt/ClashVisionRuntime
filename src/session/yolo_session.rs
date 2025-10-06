@@ -1,19 +1,19 @@
 //! YOLO session management with improved error handling and performance
 
-use std::path::Path;
-use image::{DynamicImage, RgbImage};
-use ndarray::Array4;
-use ort::session::SessionOutputs;
-use crate::{
-    image::image_util::{LoadedImageU8, load_image_u8, normalize_image_f32},
-};
-use crate::detection::BoundingBox;
 use crate::detection::nms::{nms, nms_per_class};
 use crate::detection::output::output_to_yolo_txt_normalized;
 use crate::detection::visualization::{draw_boxes, DrawConfig};
+use crate::detection::BoundingBox;
+use crate::image::image_util::load_image_u8_default;
 use crate::model::inference::{create_inference, YoloInference};
 use crate::session::ort_inference_session::OrtInferenceSession;
 use crate::session::SessionError;
+use crate::image::image_util::{normalize_image_f32};
+use image::{DynamicImage, RgbImage};
+use ndarray::Array4;
+use ort::session::SessionOutputs;
+use std::path::Path;
+use crate::image::loaded_image::LoadedImageU8;
 
 /// Configuration for YOLO session
 #[derive(Debug, Clone)]
@@ -103,7 +103,7 @@ impl YoloSession {
 
     /// Loads and preprocesses an image
     pub fn load_and_preprocess_image(&self, image_path: &str) -> Result<(RgbImage, LoadedImageU8), SessionError> {
-        let loaded_image = load_image_u8(image_path, self.config.input_size)
+        let loaded_image = load_image_u8_default(image_path, self.config.input_size)
             .map_err(|e| SessionError::ImageProcessing(format!("Failed to load image: {}", e)))?;
 
         let interleaved_data: Vec<u8> = loaded_image
@@ -181,7 +181,7 @@ impl YoloSession {
     ) -> Result<(), SessionError> {
         let (original_image, loaded_image) = self.load_and_preprocess_image(image_path)?;
 
-        let normalized_image = normalize_image_f32(&loaded_image, None, None);
+        let normalized_image = normalize_image_f32(&loaded_image, None);
         let mut inferred_boxes = self.run_inference(normalized_image.image_array)?;
 
         // Apply NMS if enabled

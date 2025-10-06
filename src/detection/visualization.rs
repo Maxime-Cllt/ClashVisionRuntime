@@ -1,7 +1,7 @@
 //! Visualization utilities for drawing bounding boxes on images.
 
 use super::bbox::BoundingBox;
-use crate::image::image_util::generate_color_for_classes;
+use crate::image::image_util::{generate_class_colors};
 use image::{DynamicImage, RgbImage, RgbaImage};
 use raqote::{DrawOptions, DrawTarget, LineJoin, PathBuilder, SolidSource, Source, StrokeStyle};
 use std::collections::HashMap;
@@ -74,7 +74,7 @@ fn generate_colors_for_boxes(boxes: &[BoundingBox]) -> HashMap<usize, SolidSourc
         return HashMap::new();
     }
 
-    generate_color_for_classes()
+    generate_class_colors()
 }
 
 /// Draws a single bounding box on the draw target.
