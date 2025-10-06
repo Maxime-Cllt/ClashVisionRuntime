@@ -41,7 +41,7 @@ pub fn draw_bounding_boxes(
     }
 
     let mut draw_target = DrawTarget::new(img_width as i32, img_height as i32);
-    let class_colors = generate_colors_for_boxes(boxes);
+    let class_colors: HashMap<usize, SolidSource> = generate_colors_for_boxes(boxes);
 
     // Pre-calculate scaling factors
     let scale_x = img_width as f32 / input_size.0 as f32;
