@@ -1,3 +1,4 @@
-mod detection;
+pub mod detection;
 mod inference_result;
-pub mod yolo_model;
+pub mod yolo_session;
+mod yolo_utils;

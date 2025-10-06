@@ -1,7 +1,7 @@
 [package]
 name = "ClashVisionRuntime"
 version = "0.1.0"
-license = "GPL-3"
+license = "GPL-3.0"
 repository = "https://github.com/Maxime-Cllt/DataLint.git"
 categories = ["accessibility", "command-line-interface"]
 keywords = ["machine-learning", "ai", "computer-vision", "image-processing", "onnx"]
@@ -10,15 +10,14 @@ edition = "2024"
 
 
 [dependencies]
-ort = "1.16.3"
 image = "0.25.8"
-ndarray = "0.15"
-tokio = { version = "1.0", features = ["full"] }
-imageproc = "0.25"
-rusttype = "0.9"
+ndarray = "0.16.1"
+ort = "2.0.0-rc.10"
+raqote = "0.8.4"
+
 
 [dev-dependencies]
-criterion = "0.7.0"
+criterion = "^0.7.0"
 
 
 [lib]

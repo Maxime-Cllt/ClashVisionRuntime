@@ -7,3 +7,23 @@ pub struct Detection {
     pub confidence: f32,
     pub bbox: [f32; 4], // [x1, y1, x2, y2]
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_detection_creation() {
+        let detection = Detection {
+            class_id: 1,
+            confidence: 0.85,
+            bbox: [50.0, 50.0, 150.0, 150.0],
+        };
+
+        assert_eq!(detection.class_id, 1);
+        assert!((detection.confidence - 0.85).abs() < f32::EPSILON);
+        assert_eq!(detection.bbox, [50.0, 50.0, 150.0, 150.0]);
+    }
+
+}
