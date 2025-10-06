@@ -7,7 +7,6 @@ pub struct NormalizationConfig {
 }
 
 impl NormalizationConfig {
-    
     /// Predefined normalization config for ImageNet models
     pub fn imagenet() -> Self {
         Self {
@@ -28,7 +27,7 @@ impl NormalizationConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::image::{IMAGENET_MEAN, IMAGENET_STD, DEFAULT_MEAN, DEFAULT_STD};
+    use crate::image::{DEFAULT_MEAN, DEFAULT_STD, IMAGENET_MEAN, IMAGENET_STD};
 
     #[test]
     fn test_imagenet_normalization() {

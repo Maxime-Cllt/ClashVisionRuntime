@@ -17,7 +17,11 @@ pub fn nms(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
 
     // Sort by confidence in descending order
     let mut sorted_boxes = boxes.to_vec();
-    sorted_boxes.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal));
+    sorted_boxes.sort_by(|a, b| {
+        b.confidence
+            .partial_cmp(&a.confidence)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     let mut result = Vec::with_capacity(boxes.len());
     let mut suppressed = vec![false; sorted_boxes.len()];
@@ -64,7 +68,11 @@ pub fn nms_per_class(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingB
     }
 
     // Sort final result by confidence
-    result.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal));
+    result.sort_by(|a, b| {
+        b.confidence
+            .partial_cmp(&a.confidence)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     result
 }

@@ -1,5 +1,5 @@
-use ndarray::Array4;
 use crate::image::image_size::ImageSize;
+use ndarray::Array4;
 
 #[derive(Clone)]
 pub struct LoadedImage<T> {

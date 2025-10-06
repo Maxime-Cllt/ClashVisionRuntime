@@ -2,8 +2,8 @@
 
 use crate::detection::BoundingBox;
 use crate::model::yolo_type::YoloType;
-use crate::model::yolov10_inference::Yolov10Inference;
 use crate::model::yolov8_inference::Yolov8Inference;
+use crate::model::yolov10_inference::Yolov10Inference;
 use ndarray::Array;
 
 /// Trait for YOLO model inference

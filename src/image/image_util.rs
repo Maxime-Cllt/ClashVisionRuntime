@@ -5,7 +5,7 @@ use crate::image::loaded_image::{LoadedImageF32, LoadedImageU8};
 use crate::image::norm_config::NormalizationConfig;
 use crate::image::{DEFAULT_MEAN, DEFAULT_STD};
 use image::{ImageBuffer, ImageError, Pixel, Rgb};
-use ndarray::{s, Array4};
+use ndarray::{Array4, s};
 use raqote::SolidSource;
 use std::collections::HashMap;
 use std::path::Path;

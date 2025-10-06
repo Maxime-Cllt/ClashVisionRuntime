@@ -1,7 +1,7 @@
 //! Visualization utilities for drawing bounding boxes on images.
 
 use super::bbox::BoundingBox;
-use crate::image::image_util::{generate_class_colors};
+use crate::image::image_util::generate_class_colors;
 use image::{DynamicImage, RgbImage, RgbaImage};
 use raqote::{DrawOptions, DrawTarget, LineJoin, PathBuilder, SolidSource, Source, StrokeStyle};
 use std::collections::HashMap;

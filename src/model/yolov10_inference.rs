@@ -1,12 +1,16 @@
-use ndarray::Array;
 use crate::detection::BoundingBox;
 use crate::model::inference::YoloInference;
+use ndarray::Array;
 
 /// YOLOv10 inference implementation
 pub struct Yolov10Inference;
 
 impl YoloInference for Yolov10Inference {
-    fn parse_output(&self, output: &Array<f32, ndarray::IxDyn>, confidence_threshold: f32) -> Vec<BoundingBox> {
+    fn parse_output(
+        &self,
+        output: &Array<f32, ndarray::IxDyn>,
+        confidence_threshold: f32,
+    ) -> Vec<BoundingBox> {
         let shape = output.shape();
         let reshaped_output = output
             .to_shape((shape[1], shape[2]))

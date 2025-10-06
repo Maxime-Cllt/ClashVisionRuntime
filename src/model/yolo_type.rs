@@ -44,7 +44,7 @@ mod tests {
         assert_eq!(YoloType::YoloV8.as_str(), "YoloV8");
         assert_eq!(YoloType::YoloV10.as_str(), "YoloV10");
     }
-    
+
     #[test]
     fn test_yolo_type_try_from() {
         assert_eq!(YoloType::try_from("yolov8").unwrap(), YoloType::YoloV8);

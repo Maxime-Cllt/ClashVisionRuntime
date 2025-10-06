@@ -1,19 +1,19 @@
 //! YOLO session management with improved error handling and performance
 
+use crate::detection::BoundingBox;
 use crate::detection::nms::{nms, nms_per_class};
 use crate::detection::output::output_to_yolo_txt_normalized;
-use crate::detection::visualization::{draw_boxes, DrawConfig};
-use crate::detection::BoundingBox;
+use crate::detection::visualization::{DrawConfig, draw_boxes};
 use crate::image::image_util::load_image_u8_default;
-use crate::model::inference::{create_inference, YoloInference};
-use crate::session::ort_inference_session::OrtInferenceSession;
+use crate::image::image_util::normalize_image_f32;
+use crate::image::loaded_image::LoadedImageU8;
+use crate::model::inference::{YoloInference, create_inference};
 use crate::session::SessionError;
-use crate::image::image_util::{normalize_image_f32};
+use crate::session::ort_inference_session::OrtInferenceSession;
 use image::{DynamicImage, RgbImage};
 use ndarray::Array4;
 use ort::session::SessionOutputs;
 use std::path::Path;
-use crate::image::loaded_image::LoadedImageU8;
 
 /// Configuration for YOLO session
 #[derive(Debug, Clone)]
@@ -78,7 +78,10 @@ impl YoloSession {
     }
 
     /// Runs inference on the preprocessed input tensor
-    pub fn run_inference(&mut self, input_tensor: Array4<f32>) -> Result<Vec<BoundingBox>, SessionError> {
+    pub fn run_inference(
+        &mut self,
+        input_tensor: Array4<f32>,
+    ) -> Result<Vec<BoundingBox>, SessionError> {
         let outputs: SessionOutputs = self
             .session
             .run_inference(input_tensor)
@@ -96,13 +99,18 @@ impl YoloSession {
             .map_err(|e| SessionError::Inference(format!("Failed to build ndarray: {}", e)))?;
 
         // Parse output using appropriate inference implementation
-        let boxes = self.inference.parse_output(&output, self.config.confidence_threshold);
+        let boxes = self
+            .inference
+            .parse_output(&output, self.config.confidence_threshold);
 
         Ok(boxes)
     }
 
     /// Loads and preprocesses an image
-    pub fn load_and_preprocess_image(&self, image_path: &str) -> Result<(RgbImage, LoadedImageU8), SessionError> {
+    pub fn load_and_preprocess_image(
+        &self,
+        image_path: &str,
+    ) -> Result<(RgbImage, LoadedImageU8), SessionError> {
         let loaded_image = load_image_u8_default(image_path, self.config.input_size)
             .map_err(|e| SessionError::ImageProcessing(format!("Failed to load image: {}", e)))?;
 
@@ -125,7 +133,9 @@ impl YoloSession {
             loaded_image.size.height,
             interleaved_data,
         )
-            .ok_or_else(|| SessionError::ImageProcessing("Failed to create image from raw data".to_string()))?;
+        .ok_or_else(|| {
+            SessionError::ImageProcessing("Failed to create image from raw data".to_string())
+        })?;
 
         Ok((img, loaded_image))
     }
@@ -153,7 +163,8 @@ impl YoloSession {
         let txt_output_path = output_dir.join(format!("{}.txt", file_name.to_string_lossy()));
 
         // Save image
-        image.save(&image_output_path)
+        image
+            .save(&image_output_path)
             .map_err(|e| SessionError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
 
         // Save YOLO format detections
@@ -214,7 +225,9 @@ impl YoloSession {
         let results = image_paths
             .iter()
             .map(|path| {
-                let path_str = path.as_ref().to_str()
+                let path_str = path
+                    .as_ref()
+                    .to_str()
                     .ok_or_else(|| SessionError::ImageProcessing("Invalid path".to_string()))?;
                 self.process_image_with_output_dir(path_str, output_dir)
             })

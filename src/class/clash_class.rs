@@ -38,7 +38,7 @@ impl ClashClass {
         ];
         &COLORS
     }
-    
+
     /// Returns the number of ClashClass variants.
     pub fn num_classes() -> usize {
         Self::values().len()
@@ -88,7 +88,7 @@ mod tests {
         assert_eq!(colors[0], (255, 0, 255, 255));
         assert_eq!(colors[1], (212, 175, 55, 255));
     }
-    
+
     #[test]
     fn test_num_classes() {
         assert_eq!(ClashClass::num_classes(), 2);
