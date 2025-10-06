@@ -2,7 +2,7 @@
 name = "ClashVisionRuntime"
 version = "0.5.0"
 license = "GPL-3.0"
-repository = "https://github.com/Maxime-Cllt/DataLint.git"
+repository = "https://github.com/Maxime-Cllt/ClashVisionRuntime.git"
 categories = ["accessibility", "command-line-interface"]
 keywords = ["machine-learning", "ai", "computer-vision", "image-processing", "onnx"]
 authors = ["Maxime-Cllt"]

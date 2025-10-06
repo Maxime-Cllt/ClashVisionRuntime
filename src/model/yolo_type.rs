@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 /// Enum representing different types of YOLO models.
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone)]
 pub enum YoloType {
     YoloV8,
     YoloV10,

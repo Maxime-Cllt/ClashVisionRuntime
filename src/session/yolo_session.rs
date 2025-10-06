@@ -8,6 +8,7 @@ use crate::image::image_util::load_image_u8_default;
 use crate::image::image_util::normalize_image_f32;
 use crate::image::loaded_image::LoadedImageU8;
 use crate::model::inference::{create_inference, YoloInference};
+use crate::model::yolo_type::YoloType;
 use crate::session::ort_inference_session::OrtInferenceSession;
 use crate::session::SessionError;
 use image::{DynamicImage, RgbImage};
@@ -44,37 +45,32 @@ impl Default for SessionConfig {
 pub struct YoloSession {
     session: OrtInferenceSession,
     config: SessionConfig,
-    model_name: String,
+    model_type: YoloType,
     inference: Box<dyn YoloInference>,
 }
 
 impl YoloSession {
     /// Creates a new YOLO session with default configuration
-    pub fn new(model_path: &str, model_name: String) -> Result<Self, SessionError> {
-        Self::with_config(model_path, model_name, SessionConfig::default())
+    pub fn new(model_path: &str, model_type: YoloType) -> Result<Self, SessionError> {
+        Self::with_config(model_path, model_type, SessionConfig::default())
     }
 
     /// Creates a new YOLO session with custom configuration
     pub fn with_config(
         model_path: &str,
-        model_name: String,
+        model_type: YoloType,
         config: SessionConfig,
     ) -> Result<Self, SessionError> {
         let session = OrtInferenceSession::new(Path::new(model_path))
             .map_err(|e| SessionError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
-        let inference = create_inference(&model_name);
+        let inference = create_inference(model_type.clone());
 
         Ok(Self {
             session,
             config,
-            model_name,
+            model_type,
             inference,
         })
-    }
-
-    /// Updates session configuration
-    pub fn update_config(&mut self, config: SessionConfig) {
-        self.config = config;
     }
 
     /// Runs inference on the preprocessed input tensor
@@ -241,28 +237,6 @@ impl YoloSession {
 
         Ok(results)
     }
-
-    /// Returns inference statistics
-    #[must_use]
-    pub fn get_model_info(&self) -> ModelInfo {
-        ModelInfo {
-            model_name: self.model_name.clone(),
-            input_size: self.config.input_size,
-            confidence_threshold: self.config.confidence_threshold,
-            nms_threshold: self.config.nms_threshold,
-            use_nms: self.config.use_nms,
-        }
-    }
-}
-
-/// Model information struct
-#[derive(Debug, Clone)]
-pub struct ModelInfo {
-    pub model_name: String,
-    pub input_size: (u32, u32),
-    pub confidence_threshold: f32,
-    pub nms_threshold: f32,
-    pub use_nms: bool,
 }
 
 #[cfg(test)]

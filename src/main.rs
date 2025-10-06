@@ -1,3 +1,4 @@
+use clashvision::model::yolo_type::YoloType;
 use clashvision::session::yolo_session::YoloSession;
 
 #[cfg(test)]
@@ -7,8 +8,10 @@ fn main() {
     const IMAGE_PATH: &str = "assets/village_1759583099.png";
     const MODEL_PATH: &str = "models/best.onnx";
 
+    let yolo_type: YoloType = YoloType::try_from("yolov8").expect("Failed to parse YOLO type");
+
     let mut yolo_model =
-        YoloSession::new(MODEL_PATH, "yolov8".into()).expect("Failed to create YOLO model");
+        YoloSession::new(MODEL_PATH, yolo_type).expect("Failed to create YOLO model");
 
     yolo_model
         .process_image(IMAGE_PATH)
