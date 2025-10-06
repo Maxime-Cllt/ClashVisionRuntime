@@ -10,11 +10,11 @@ edition = "2024"
 
 
 [dependencies]
-tch = "0.20.0"
-image = "0.24"
-imageproc = "0.23"
-rusttype = "0.9"
-anyhow = "1.0"
+image = "0.25.2"
+ndarray = "0.16.1"
+ort = "2.0.0-rc.10"
+raqote = "0.8.4"
+walkdir = "2.5.0"
 
 
 [dev-dependencies]
