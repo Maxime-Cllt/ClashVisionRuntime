@@ -5,8 +5,6 @@ mod utils;
 pub mod visualization;
 
 pub use bbox::BoundingBox;
-pub use nms::non_maximum_suppression;
-pub use output::export_to_yolo_format;
 pub use visualization::draw_bounding_boxes;
 
 /// Common result type for detection operations

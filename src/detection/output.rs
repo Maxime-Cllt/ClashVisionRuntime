@@ -1,141 +1,103 @@
-//! Output utilities for exporting detection results.
+//! Output utilities for saving detection results
 
-use super::bbox::{BoundingBox, YoloBox};
-use super::{DetectionError, DetectionResult};
-use std::fs::File;
-use std::io::{BufWriter, Write};
+use super::bbox::BoundingBox;
+use std::fs;
+use std::io::{self};
 use std::path::Path;
 
-/// Export configuration for different output formats.
-#[derive(Debug, Clone)]
-pub struct ExportConfig {
-    pub include_confidence: bool,
-    pub precision: usize,
+/// Output format options
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum OutputFormat {
+    Yolo,
+    Coco,
+    Pascal,
 }
 
-impl Default for ExportConfig {
-    fn default() -> Self {
-        Self {
-            include_confidence: false,
-            precision: 6,
-        }
-    }
-}
-
-/// Exports bounding boxes to YOLO format text file.
-pub fn export_to_yolo_format<P: AsRef<Path>>(
-    boxes: &[BoundingBox],
-    image_dimensions: (u32, u32),
-    output_path: P,
-    config: Option<ExportConfig>,
-) -> DetectionResult<()> {
-    let config = config.unwrap_or_default();
-    let (image_width, image_height) = image_dimensions;
-
-    if boxes.is_empty() {
-        return write_empty_file(output_path);
-    }
-
-    let file = File::create(output_path)?;
-    let mut writer = BufWriter::new(file);
-
-    for bbox in boxes {
-        let yolo_box = bbox.to_yolo_format(image_width, image_height);
-        let line = format_yolo_line(&yolo_box, &config);
-        writeln!(writer, "{}", line)?;
-    }
-
-    writer.flush()?;
-    Ok(())
-}
-
-/// Formats a single YOLO box line according to the configuration.
-fn format_yolo_line(yolo_box: &YoloBox, config: &ExportConfig) -> String {
-    let precision = config.precision;
-
-    if config.include_confidence {
-        format!(
-            "{} {:.prec$} {:.prec$} {:.prec$} {:.prec$} {:.prec$}",
-            yolo_box.class_id,
-            yolo_box.x_center,
-            yolo_box.y_center,
-            yolo_box.width,
-            yolo_box.height,
-            yolo_box.confidence,
-            prec = precision
-        )
-    } else {
-        format!(
-            "{} {:.prec$} {:.prec$} {:.prec$} {:.prec$}",
-            yolo_box.class_id,
-            yolo_box.x_center,
-            yolo_box.y_center,
-            yolo_box.width,
-            yolo_box.height,
-            prec = precision
-        )
-    }
-}
-
-/// Writes an empty file (for cases with no detections).
-fn write_empty_file<P: AsRef<Path>>(output_path: P) -> DetectionResult<()> {
-    File::create(output_path)?;
-    Ok(())
-}
-
-/// Exports detection results to JSON format.
-pub fn export_to_json<P: AsRef<Path>>(
-    boxes: &[BoundingBox],
-    image_dimensions: (u32, u32),
-    output_path: P,
-) -> DetectionResult<()> {
-    use serde_json;
-
-    #[derive(serde::Serialize)]
-    struct JsonDetection {
-        class_id: usize,
-        confidence: f32,
-        bbox: [f32; 4],            // [x1, y1, x2, y2]
-        normalized_bbox: [f32; 4], // [x1, y1, x2, y2] normalized to [0, 1]
-    }
-
-    let (width, height) = image_dimensions;
-    let detections: Vec<JsonDetection> = boxes
-        .iter()
-        .map(|bbox| JsonDetection {
-            class_id: bbox.class_id,
-            confidence: bbox.confidence,
-            bbox: [bbox.x1, bbox.y1, bbox.x2, bbox.y2],
-            normalized_bbox: [
-                bbox.x1 / width as f32,
-                bbox.y1 / height as f32,
-                bbox.x2 / width as f32,
-                bbox.y2 / height as f32,
-            ],
-        })
-        .collect();
-
-    let json_output = serde_json::to_string_pretty(&detections).map_err(|e| {
-        DetectionError::IoError(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            format!("JSON serialization error: {}", e),
-        ))
-    })?;
-
-    std::fs::write(output_path, json_output)?;
-    Ok(())
-}
-
-// Backward compatibility function
+/// Outputs bounding boxes to a YOLO-format text file
 pub fn output_to_yolo_txt(
     boxes: Vec<BoundingBox>,
     image_width: u32,
     image_height: u32,
     output_path: &str,
-) {
-    if let Err(e) = export_to_yolo_format(&boxes, (image_width, image_height), output_path, None) {
-        eprintln!("Failed to write YOLO output: {}", e);
+) -> io::Result<()> {
+    output_to_yolo_txt_normalized(boxes, image_width, image_height, output_path)
+}
+
+/// Outputs normalized YOLO format with error handling
+pub fn output_to_yolo_txt_normalized(
+    boxes: Vec<BoundingBox>,
+    image_width: u32,
+    image_height: u32,
+    output_path: &str,
+) -> io::Result<()> {
+    if boxes.is_empty() {
+        return fs::write(output_path, "");
     }
+
+    let img_width_f = image_width as f32;
+    let img_height_f = image_height as f32;
+
+    // Pre-allocate string with estimated capacity
+    let estimated_size = boxes.len() * 50; // Rough estimate: 50 chars per line
+    let mut yolo_output = String::with_capacity(estimated_size);
+
+    for bbox in &boxes {
+        let (center_x, center_y) = bbox.center();
+        let (width, height) = bbox.dimensions();
+
+        // Normalize coordinates
+        let norm_center_x = center_x / img_width_f;
+        let norm_center_y = center_y / img_height_f;
+        let norm_width = width / img_width_f;
+        let norm_height = height / img_height_f;
+
+        // Format with appropriate precision
+        yolo_output.push_str(&format!(
+            "{} {:.6} {:.6} {:.6} {:.6}\n",
+            bbox.class_id, norm_center_x, norm_center_y, norm_width, norm_height
+        ));
+    }
+
+    fs::write(output_path, yolo_output)
+}
+
+/// Outputs detection results in different formats
+pub fn output_detections(
+    boxes: &[BoundingBox],
+    image_dimensions: (u32, u32),
+    output_path: &Path,
+    format: OutputFormat,
+) -> io::Result<()> {
+    match format {
+        OutputFormat::Yolo => output_to_yolo_txt_normalized(
+            boxes.to_vec(),
+            image_dimensions.0,
+            image_dimensions.1,
+            output_path.to_str().unwrap(),
+        ),
+        OutputFormat::Coco => output_to_coco_json(boxes, image_dimensions, output_path),
+        OutputFormat::Pascal => output_to_pascal_xml(boxes, image_dimensions, output_path),
+    }
+}
+
+/// Placeholder for COCO JSON output
+fn output_to_coco_json(
+    _boxes: &[BoundingBox],
+    _image_dimensions: (u32, u32),
+    _output_path: &Path,
+) -> io::Result<()> {
+    // Implementation for COCO format would go here
+    todo!("COCO JSON output not implemented yet")
+}
+
+/// Placeholder for Pascal VOC XML output
+fn output_to_pascal_xml(
+    _boxes: &[BoundingBox],
+    _image_dimensions: (u32, u32),
+    _output_path: &Path,
+) -> io::Result<()> {
+    // Implementation for Pascal VOC format would go here
+    todo!("Pascal VOC XML output not implemented yet")
 }
 
 #[cfg(test)]
@@ -144,22 +106,26 @@ mod tests {
     use tempfile::NamedTempFile;
 
     #[test]
-    fn test_yolo_export() -> DetectionResult<()> {
-        let boxes = vec![
-            BoundingBox::new(10.0, 20.0, 30.0, 40.0, 0, 0.9)?,
-            BoundingBox::new(50.0, 60.0, 70.0, 80.0, 1, 0.8)?,
-        ];
-
+    fn test_yolo_output_empty() -> io::Result<()> {
         let temp_file = NamedTempFile::new()?;
-        export_to_yolo_format(&boxes, (100, 100), temp_file.path(), None)?;
+        let boxes = vec![];
 
-        let content = std::fs::read_to_string(temp_file.path())?;
-        let lines: Vec<&str> = content.trim().split('\n').collect();
+        output_to_yolo_txt_normalized(boxes, 640, 480, temp_file.path().to_str().unwrap())?;
 
-        assert_eq!(lines.len(), 2);
-        assert!(lines[0].starts_with("0 "));
-        assert!(lines[1].starts_with("1 "));
+        let content = fs::read_to_string(temp_file.path())?;
+        assert!(content.is_empty());
+        Ok(())
+    }
 
+    #[test]
+    fn test_yolo_output_single_box() -> io::Result<()> {
+        let temp_file = NamedTempFile::new()?;
+        let boxes = vec![BoundingBox::new(10.0, 20.0, 50.0, 80.0, 1, 0.9)];
+
+        output_to_yolo_txt_normalized(boxes, 100, 100, temp_file.path().to_str().unwrap())?;
+
+        let content = fs::read_to_string(temp_file.path())?;
+        assert!(content.contains("1 0.300000 0.500000 0.400000 0.600000"));
         Ok(())
     }
 }

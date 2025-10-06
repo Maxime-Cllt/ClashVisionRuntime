@@ -27,9 +27,9 @@ impl OrtInferenceSession {
     ) -> ort::Result<SessionOutputs<'_>> {
         let time_pre_compute = Instant::now();
 
-        let shape = input_image.shape().to_vec();
-        let raw_data = input_image.as_slice().unwrap().to_vec();
-        let input_tensor = Tensor::from_array((shape, raw_data.into_boxed_slice()))?;
+        let shape: Vec<usize> = input_image.shape().to_vec();
+        let raw_data: Vec<f32> = input_image.as_slice().unwrap().to_vec();
+        let input_tensor: Tensor<f32> = Tensor::from_array((shape, raw_data.into_boxed_slice()))?;
 
         let input_value: SessionInputValue = SessionInputValue::Owned(Value::from(input_tensor));
         let inputs: Vec<(Cow<str>, SessionInputValue)> =
