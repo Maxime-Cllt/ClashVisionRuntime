@@ -1,6 +1,6 @@
 [package]
 name = "ClashVisionRuntime"
-version = "0.1.0"
+version = "0.2.0"
 license = "GPL-3.0"
 repository = "https://github.com/Maxime-Cllt/DataLint.git"
 categories = ["accessibility", "command-line-interface"]
@@ -51,3 +51,20 @@ codegen-units = 1  # Merge codegen units for better optimization (can increase c
 overflow-checks = false  # Disable overflow checks for performance
 panic = "abort" # Use unwind strategy to get better backtraces.
 strip = "symbols"     # Strip debug symbols to reduce binary size
+
+
+[profile.bench]
+# Benchmark profile for performance testing
+incremental = true # Enable incremental compilation for faster benchmark builds
+opt-level = 2  # Optimize for speed
+debug = false  # No debug info in benchmark builds
+overflow-checks = false  # Disable overflow checks for performance
+lto = true  # Enable Link Time Optimization for better performance
+codegen-units = 4  # Merge codegen units for better optimization (can increase
+panic = "unwind" # Use unwind strategy to get better backtraces.
+
+
+[[bench]]
+name = "benchmark_application"
+harness = false
+path = "src/benches/application_bench.rs"

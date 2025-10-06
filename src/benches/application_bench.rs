@@ -1,13 +1,10 @@
 use clashvision::structs::yolo_session::YoloSession;
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::time::Duration;
 
 #[allow(dead_code)]
 fn bench_process_image() {
-    const IMAGE_PATH: &str = "../assets/village_1759583099.png";
-    const MODEL_PATH: &str =
-        "/Users/maximecolliat/PycharmProjects/PythonProject/ClashVision/models/v1/best.onnx";
-
+    const IMAGE_PATH: &str = "assets/village_1759583099.png";
+    const MODEL_PATH: &str = "models/v1/best.onnx";
     let mut yolo_model = YoloSession::new(MODEL_PATH, (640, 640), false, "yolov8".to_string())
         .expect("Failed to create YOLO model");
 
@@ -17,11 +14,6 @@ fn bench_process_image() {
 #[allow(dead_code)]
 fn benchmark_application(c: &mut Criterion) {
     let mut group = c.benchmark_group("benchmark_application");
-
-    group.sample_size(15);
-    group.measurement_time(Duration::from_secs(15));
-    group.warm_up_time(Duration::from_secs(10));
-
     group.bench_function("test_process_image", |b| {
         b.iter(|| {
             bench_process_image();
