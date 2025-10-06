@@ -192,7 +192,7 @@ impl YoloSession {
     ) -> Result<(), SessionError> {
         let (original_image, loaded_image) = self.load_and_preprocess_image(image_path)?;
 
-        let normalized_image = normalize_image_f32(&loaded_image, None);
+        let normalized_image = normalize_image_f32(&loaded_image, None, None);
         let mut inferred_boxes = self.run_inference(normalized_image.image_array)?;
 
         // Apply NMS if enabled

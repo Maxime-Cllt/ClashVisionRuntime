@@ -100,39 +100,28 @@ fn image_to_array(image: ImageBuffer<Rgb<u8>, Vec<u8>>, size: ImageSize) -> Arra
 }
 
 /// Normalizes image from u8 to f32 with specified mean and standard deviation
+
+/// Normalizes the image using the provided mean and std deviation.
 pub fn normalize_image_f32(
-    loaded_image: &LoadedImageU8,
-    config: Option<&NormalizationConfig>,
-) -> LoadedImageF32 {
-    let config = config.unwrap_or(&NormalizationConfig::imagenet()).clone();
-
-    // Convert to f32 and normalize to [0, 1]
-    let mut array = loaded_image.image_array.mapv(|x| x as f32 / 255.0);
-
-    // Apply channel-wise normalization
-    for c in 0..3 {
-        let mean = config.mean[c];
-        let std = config.std[c];
-
-        array
-            .slice_mut(s![0, c, .., ..])
-            .mapv_inplace(|x| (x - mean) / std);
-    }
-
-    LoadedImageF32::new(array, loaded_image.size)
-}
-
-/// Convenience function for normalization with custom mean/std
-pub fn normalize_image_f32_custom(
     loaded_image: &LoadedImageU8,
     mean: Option<[f32; 3]>,
     std: Option<[f32; 3]>,
 ) -> LoadedImageF32 {
-    let config = NormalizationConfig {
-        mean: mean.unwrap_or(DEFAULT_MEAN),
-        std: std.unwrap_or(DEFAULT_STD),
-    };
-    normalize_image_f32(loaded_image, Some(&config))
+    let mean = mean.unwrap_or(DEFAULT_MEAN);
+    let std = std.unwrap_or(DEFAULT_STD);
+
+    let mut array = loaded_image.image_array.mapv(|x| x as f32 / 255.0);
+
+    for c in 0..3 {
+        array
+            .slice_mut(s![0, c, .., ..])
+            .mapv_inplace(|x| (x - mean[c]) / std[c]);
+    }
+
+    LoadedImageF32 {
+        image_array: array,
+        size: loaded_image.size.clone(),
+    }
 }
 
 /// Generates distinct colors for each class using a more sophisticated color scheme
