@@ -10,7 +10,9 @@ pub enum ClashClass {
 
 impl ClashClass {
     /// Returns the string representation of the `ClashClass` variant.
-    pub fn as_str(&self) -> &'static str {
+    #[inline]
+    #[must_use]
+    pub const fn as_str(&self) -> &'static str {
         match self {
             Self::ElixirStorage => "Elixir Storage",
             Self::GoldStorage => "Gold Storage",

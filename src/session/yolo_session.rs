@@ -90,7 +90,7 @@ impl YoloSession {
 
         // Build ndarray from ONNX tensor
         let output = ndarray::Array::from_shape_vec(shape_usize, data.to_vec())
-            .map_err(|e| SessionError::Inference(format!("Failed to build ndarray: {}", e)))?;
+            .map_err(|e| SessionError::Inference(format!("Failed to build ndarray: {e}")))?;
 
         // Parse output using appropriate inference implementation
         let boxes = self
@@ -106,7 +106,7 @@ impl YoloSession {
         image_path: &str,
     ) -> Result<(RgbImage, LoadedImageU8), SessionError> {
         let loaded_image = load_image_u8_default(image_path, self.config.input_size)
-            .map_err(|e| SessionError::ImageProcessing(format!("Failed to load image: {}", e)))?;
+            .map_err(|e| SessionError::ImageProcessing(format!("Failed to load image:{e}")))?;
 
         let interleaved_data: Vec<u8> = loaded_image
             .image_array
@@ -165,7 +165,7 @@ impl YoloSession {
         // Save image
         image
             .save(&image_output_path)
-            .map_err(|e| SessionError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+            .map_err(|e| SessionError::Io(std::io::Error::other(e)))?;
 
         // Save YOLO format detections
         OutputFormat::output_detections(boxes, image.dimensions(), &output_path, Some(format))?;
