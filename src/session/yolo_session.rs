@@ -1,6 +1,6 @@
 use crate::detection::nms::{nms, nms_per_class};
 use crate::detection::output::OutputFormat;
-use crate::detection::visualization::draw_boxes;
+use crate::detection::visualization::DrawConfig;
 use crate::detection::BoundingBox;
 use crate::image::image_util::load_image_u8_default;
 use crate::image::image_util::normalize_image_f32;
@@ -200,7 +200,7 @@ impl YoloSession {
         }
 
         // Draw boxes with custom configuration
-        let result_image = draw_boxes(
+        let result_image = DrawConfig::draw_boxes(
             &DynamicImage::ImageRgb8(original_image),
             &inferred_boxes,
             self.config.input_size,

@@ -137,6 +137,7 @@ impl OutputFormat {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::class::clash_class::ClashClass;
     use tempfile::NamedTempFile;
 
     #[test]
@@ -155,15 +156,23 @@ mod tests {
         )?;
 
         let content = fs::read_to_string(temp_file.path())?;
-        assert!(content.contains("1 0.300000 0.500000 0.400000 0.600000"));
-        assert!(content.contains("2 0.500000 0.700000 0.400000 0.600000"));
+        let expected = "1 0.300000 0.500000 0.400000 0.600000\n2 0.500000 0.650000 0.400000 0.500000\n";
+        assert_eq!(content, expected);
+
         Ok(())
     }
 
     #[test]
     fn test_yolo_output_single_box() -> io::Result<()> {
         let temp_file = NamedTempFile::new()?;
-        let boxes = vec![BoundingBox::new(10.0, 20.0, 50.0, 80.0, 1, 0.9)];
+        let boxes = vec![BoundingBox::new(
+            10.0,
+            20.0,
+            50.0,
+            80.0,
+            ClashClass::GoldStorage.into(),
+            1.0,
+        )];
 
         OutputFormat::output_to_yolo_txt_normalized(
             &boxes,
@@ -173,22 +182,35 @@ mod tests {
         )?;
 
         let content = fs::read_to_string(temp_file.path())?;
-        assert!(content.contains("1 0.300000 0.500000 0.400000 0.600000"));
+        assert_eq!(content.trim(), "1 0.300000 0.500000 0.400000 0.600000");
+
+
         Ok(())
     }
 
     #[test]
     fn test_yolo_output_json() -> io::Result<()> {
         let temp_file = NamedTempFile::new()?;
-        let boxes = vec![BoundingBox::new(10.0, 20.0, 50.0, 80.0, 1, 0.9)];
+        let boxes = vec![BoundingBox::new(
+            10.0,
+            20.0,
+            50.0,
+            80.0,
+            ClashClass::GoldStorage.into(),
+            1.0,
+        )];
 
         OutputFormat::output_to_coco_json(&boxes, (100, 100), temp_file.path())?;
 
         let content = fs::read_to_string(temp_file.path())?;
         let json: serde_json::Value = serde_json::from_str(&content)?;
-        assert!(json.get("images").is_some());
-        assert!(json.get("annotations").is_some());
-        assert!(json.get("categories").is_some());
+        assert_eq!(json["images"][0]["width"], 100);
+        assert_eq!(json["images"][0]["height"], 100);
+        assert_eq!(
+            json["detections"][0]["category_id"],
+            ClashClass::GoldStorage as usize
+        );
+        assert_eq!(json["detections"][0]["score"], 1.0);
         Ok(())
     }
 
