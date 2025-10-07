@@ -4,7 +4,6 @@ use ort::session::{Session, SessionInputValue, SessionInputs, SessionOutputs};
 use ort::value::{Tensor, Value};
 use std::borrow::Cow;
 use std::path::Path;
-use std::time::Instant;
 
 /// ONNX Runtime inference session wrapper.
 #[must_use]

@@ -36,32 +36,13 @@ Clash of Clans.
 
 - **[Rust](https://www.rust-lang.org/tools/install)**
 
-## 🛠️ Installation
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/Maxime-Cllt/ClashVisionRuntime.git
-cd ClashVisionRuntime
-```
-
-### 2. Build the Project
-
-```bash
-# Development build
-cargo build
-
-# Optimized release build (recommended for production)
-cargo build --release
-```
-
 ## 🚀 Usage
 
 ### Command Line Interface
 
 ```bash
 # Using cargo (development)
-cargo run --release --file "path/to/image.png"
+cargo run --release -- "path/to/image.png"
 ```
 
 ### Parameters
