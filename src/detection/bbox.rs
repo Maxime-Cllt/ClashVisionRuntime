@@ -140,6 +140,6 @@ mod tests {
         let bbox1 = BoundingBox::new(0.0, 0.0, 10.0, 10.0, 0, 0.9);
         let bbox2 = BoundingBox::new(5.0, 5.0, 15.0, 15.0, 0, 0.8);
         let iou = bbox1.iou(&bbox2);
-        assert!((iou - 0.142857).abs() < 0.001);
+        assert!((iou - 0.142_857).abs() < 0.001);
     }
 }

@@ -1,16 +1,16 @@
 //! YOLO session management with improved error handling and performance
 
+use crate::detection::BoundingBox;
 use crate::detection::nms::{nms, nms_per_class};
 use crate::detection::output::OutputFormat;
-use crate::detection::visualization::{draw_boxes, DrawConfig};
-use crate::detection::BoundingBox;
+use crate::detection::visualization::{DrawConfig, draw_boxes};
 use crate::image::image_util::load_image_u8_default;
 use crate::image::image_util::normalize_image_f32;
 use crate::image::loaded_image::LoadedImageU8;
-use crate::model::inference::{create_inference, YoloInference};
+use crate::model::inference::{YoloInference, create_inference};
 use crate::model::yolo_type::YoloType;
-use crate::session::ort_inference_session::OrtInferenceSession;
 use crate::session::SessionError;
+use crate::session::ort_inference_session::OrtInferenceSession;
 use image::{DynamicImage, RgbImage};
 use ndarray::Array4;
 use ort::session::SessionOutputs;
@@ -85,14 +85,12 @@ impl YoloSession {
             .try_extract_tensor::<f32>()
             .map_err(|e| SessionError::Inference(format!("Failed to extract tensor: {e}")))?;
 
-
         // Convert i64 shape to usize for ndarray
         let shape_usize: Vec<usize> = shape
             .iter()
             .map(|&dim| usize::try_from(dim))
             .collect::<Result<_, _>>()
             .map_err(|e| SessionError::Inference(format!("Shape conversion error: {e}")))?;
-
 
         // Build ndarray from ONNX tensor
         let output = ndarray::Array::from_shape_vec(shape_usize, data.to_vec())

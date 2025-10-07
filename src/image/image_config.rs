@@ -13,7 +13,7 @@ pub struct ImageConfig {
 }
 
 impl ImageConfig {
-    /// Creates a new ImageConfig with specified parameters
+    /// Creates a new `ImageConfig` with specified parameters
     #[inline]
     #[must_use]
     pub const fn new(

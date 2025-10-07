@@ -2,8 +2,8 @@
 
 use crate::detection::BoundingBox;
 use crate::model::yolo_type::YoloType;
-use crate::model::yolov10_inference::Yolov10Inference;
 use crate::model::yolov8_inference::Yolov8Inference;
+use crate::model::yolov10_inference::Yolov10Inference;
 use ndarray::Array;
 
 /// Trait for YOLO model inference
@@ -18,7 +18,7 @@ pub trait YoloInference {
 
 /// Factory function to create appropriate inference implementation
 #[must_use]
-pub fn create_inference(model_name:  &YoloType) -> Box<dyn YoloInference> {
+pub fn create_inference(model_name: &YoloType) -> Box<dyn YoloInference> {
     match model_name {
         YoloType::YoloV8 => Box::new(Yolov8Inference),
         YoloType::YoloV10 => Box::new(Yolov10Inference),

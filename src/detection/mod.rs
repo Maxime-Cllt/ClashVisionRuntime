@@ -1,4 +1,5 @@
- mod bbox;
+
+mod bbox;
 pub mod nms;
 pub mod output;
 pub mod visualization;

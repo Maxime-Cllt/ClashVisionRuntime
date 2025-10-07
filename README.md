@@ -27,7 +27,8 @@ Clash of Clans.
 - 🔍 **AI-Powered Detection**: Load and run YOLOv8 model for object detection in images.
 - ⚡ **High Performance**: Optimized for speed and efficiency using Rust.
 - 🖼️ **Image Processing**: Supports various image formats for input.
-- 📊 **Detailed Output**: Returns structured JSON reports with detection results on the images.
+- 📊 **Detailed Output**: Returns structured JSON or YOLO format for easy integration.
+- 🛠️ **Easy Integration**: Command-line interface for quick setup and use.
 
 ## 📋 Prerequisites
 
@@ -89,7 +90,7 @@ ClashVisionRuntime generates detailed JSON reports with the following structure:
   ],
   "images": [
     {
-      "file_name": "macron.png",
+      "file_name": "image.png",
       "height": 640,
       "width": 640
     }
