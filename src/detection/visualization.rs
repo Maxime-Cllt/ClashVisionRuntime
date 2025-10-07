@@ -7,7 +7,7 @@ use raqote::{DrawOptions, DrawTarget, LineJoin, PathBuilder, SolidSource, Source
 use std::collections::HashMap;
 
 /// Configuration for drawing bounding boxes.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DrawConfig {
     pub line_width: f32,
     pub alpha_blend: bool,

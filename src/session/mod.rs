@@ -2,6 +2,7 @@ use thiserror::Error;
 
 pub mod ort_inference_session;
 pub mod yolo_session;
+mod session_config;
 
 /// Session-specific errors
 #[derive(Error, Debug)]
