@@ -5,13 +5,15 @@ pub struct ImageSize {
 }
 
 impl ImageSize {
-    /// Creates a new ImageSize
-    pub fn new(width: u32, height: u32) -> Self {
+    /// Creates a new `ImageSize`
+    #[inline]
+    #[must_use]
+    pub const fn new(width: u32, height: u32) -> Self {
         Self { width, height }
     }
 
     /// Calculates the aspect ratio (width / height)
-    pub fn aspect_ratio(&self) -> f32 {
+    pub fn aspect_ratio(self) -> f32 {
         self.width as f32 / self.height as f32
     }
 }

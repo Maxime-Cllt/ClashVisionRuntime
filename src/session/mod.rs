@@ -6,7 +6,6 @@ pub mod yolo_session;
 /// Session-specific errors
 #[derive(Error, Debug)]
 pub enum SessionError {
-   
     #[error("Image processing failed: {0}")]
     ImageProcessing(String),
 

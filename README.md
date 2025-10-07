@@ -18,40 +18,23 @@
 
 ## 🚀 Overview
 
-**ClashVisionRuntime** is a high-performance Rust runtime designed for executing YOLOv8 models using ONNX Runtime. It specializes in object detection within images, making it ideal for applications such as analyzing game screenshots from Clash of Clans.
-
+**ClashVisionRuntime** is a high-performance Rust runtime designed for executing YOLOv8 models using ONNX Runtime. It
+specializes in object detection within images, making it ideal for applications such as analyzing game screenshots from
+Clash of Clans.
 
 ### ✨ Key Features
 
 - 🔍 **AI-Powered Detection**: Load and run YOLOv8 model for object detection in images.
 - ⚡ **High Performance**: Optimized for speed and efficiency using Rust.
 - 🖼️ **Image Processing**: Supports various image formats for input.
-- 📊 **Detailed Output**: Returns structured JSON reports with detection results on the images.
+- 📊 **Detailed Output**: Returns structured JSON or YOLO format for easy integration.
+- 🛠️ **Easy Integration**: Command-line interface for quick setup and use.
 
 ## 📋 Prerequisites
 
 ### Required Tools
 
-- **[Rust](https://www.rust-lang.org/tools/install)** (latest stable version)
-
-## 🛠️ Installation
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/Maxime-Cllt/ClashVisionRuntime.git
-cd ClashVisionRuntime
-```
-
-### 2. Build the Project
-
-```bash
-# Development build
-cargo build
-
-# Optimized release build (recommended for production)
-cargo build --release
-```
+- **[Rust](https://www.rust-lang.org/tools/install)**
 
 ## 🚀 Usage
 
@@ -59,13 +42,7 @@ cargo build --release
 
 ```bash
 # Using cargo (development)
-cargo run --release "input_file.csv" "output_report.json"
-
-# Using compiled executable (production)
-./target/release/DataLint "input_file.csv" "output_report.json"
-
-# On Windows
-.\target\release\DataLint.exe "input_file.csv" "output_report.json"
+cargo run --release -- "path/to/image.png"
 ```
 
 ### Parameters
@@ -73,28 +50,33 @@ cargo run --release "input_file.csv" "output_report.json"
 - **Input File**: Path to the CSV file to be validated
 - **Output File**: Path where the JSON analysis report will be saved
 
-### Example Usage
-
-```bash
-# Analyze a customer data file
-./DataLint "data/customers.csv" "reports/customer_analysis.json"
-
-# Validate uploaded user data
-./DataLint "uploads/user_data.csv" "validation/results.json"
-```
-
 ## 📊 Output Format
 
-DataLint generates detailed JSON reports with the following structure:
+ClashVisionRuntime generates detailed JSON reports with the following structure:
 
-## 🔧 Development
-
-### Building from Source
-
-To build ClashVisionRuntime from source, ensure you have Rust and Cargo installed, then run:
-
-```bash
-cargo build --release
+```json
+{
+  "detections": [
+    {
+      "category_id": 1,
+      "height": 24.786376953125,
+      "id": 1,
+      "score": 0.9588687419891357,
+      "width": 25.77020263671875,
+      "x1": 427.95941162109375,
+      "x2": 453.7296142578125,
+      "y1": 278.3505859375,
+      "y2": 303.136962890625
+    }
+  ],
+  "images": [
+    {
+      "file_name": "image.png",
+      "height": 640,
+      "width": 640
+    }
+  ]
+}
 ```
 
 ## 🧪 Code quality

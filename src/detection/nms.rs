@@ -6,10 +6,11 @@ use super::bbox::BoundingBox;
 ///
 /// # Arguments
 /// * `boxes` - Slice of bounding boxes to filter
-/// * `iou_threshold` - IoU threshold for suppression (typically 0.4-0.5)
+/// * `iou_threshold` - `IoU` threshold for suppression (typically 0.4-0.5)
 ///
 /// # Returns
 /// Vector of filtered bounding boxes
+#[must_use]
 pub fn nms(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
     if boxes.is_empty() {
         return Vec::new();
@@ -17,7 +18,11 @@ pub fn nms(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
 
     // Sort by confidence in descending order
     let mut sorted_boxes = boxes.to_vec();
-    sorted_boxes.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal));
+    sorted_boxes.sort_by(|a, b| {
+        b.confidence
+            .partial_cmp(&a.confidence)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     let mut result = Vec::with_capacity(boxes.len());
     let mut suppressed = vec![false; sorted_boxes.len()];
@@ -41,11 +46,13 @@ pub fn nms(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
 }
 
 /// Performs class-agnostic NMS
+#[must_use]
 pub fn nms_class_agnostic(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
     nms(boxes, iou_threshold)
 }
 
 /// Performs per-class NMS
+#[must_use]
 pub fn nms_per_class(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
     use std::collections::HashMap;
 
@@ -64,7 +71,11 @@ pub fn nms_per_class(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingB
     }
 
     // Sort final result by confidence
-    result.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal));
+    result.sort_by(|a, b| {
+        b.confidence
+            .partial_cmp(&a.confidence)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     result
 }

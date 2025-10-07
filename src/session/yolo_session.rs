@@ -1,19 +1,20 @@
 //! YOLO session management with improved error handling and performance
 
-use crate::detection::nms::{nms, nms_per_class};
-use crate::detection::output::output_to_yolo_txt_normalized;
-use crate::detection::visualization::{draw_boxes, DrawConfig};
 use crate::detection::BoundingBox;
+use crate::detection::nms::{nms, nms_per_class};
+use crate::detection::output::OutputFormat;
+use crate::detection::visualization::{DrawConfig, draw_boxes};
 use crate::image::image_util::load_image_u8_default;
-use crate::model::inference::{create_inference, YoloInference};
-use crate::session::ort_inference_session::OrtInferenceSession;
+use crate::image::image_util::normalize_image_f32;
+use crate::image::loaded_image::LoadedImageU8;
+use crate::model::inference::{YoloInference, create_inference};
+use crate::model::yolo_type::YoloType;
 use crate::session::SessionError;
-use crate::image::image_util::{normalize_image_f32};
+use crate::session::ort_inference_session::OrtInferenceSession;
 use image::{DynamicImage, RgbImage};
 use ndarray::Array4;
 use ort::session::SessionOutputs;
 use std::path::Path;
-use crate::image::loaded_image::LoadedImageU8;
 
 /// Configuration for YOLO session
 #[derive(Debug, Clone)]
@@ -44,67 +45,72 @@ impl Default for SessionConfig {
 pub struct YoloSession {
     session: OrtInferenceSession,
     config: SessionConfig,
-    model_name: String,
     inference: Box<dyn YoloInference>,
 }
 
 impl YoloSession {
     /// Creates a new YOLO session with default configuration
-    pub fn new(model_path: &str, model_name: String) -> Result<Self, SessionError> {
-        Self::with_config(model_path, model_name, SessionConfig::default())
+    pub fn new(model_path: &str, model_type: YoloType) -> Result<Self, SessionError> {
+        Self::with_config(model_path, &model_type, SessionConfig::default())
     }
 
     /// Creates a new YOLO session with custom configuration
     pub fn with_config(
         model_path: &str,
-        model_name: String,
+        model_type: &YoloType,
         config: SessionConfig,
     ) -> Result<Self, SessionError> {
         let session = OrtInferenceSession::new(Path::new(model_path))
-            .map_err(|e| SessionError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
-        let inference = create_inference(&model_name);
+            .map_err(|e| SessionError::Io(std::io::Error::other(e)))?;
+        let inference = create_inference(&model_type);
 
         Ok(Self {
             session,
             config,
-            model_name,
             inference,
         })
     }
 
-    /// Updates session configuration
-    pub fn update_config(&mut self, config: SessionConfig) {
-        self.config = config;
-    }
-
     /// Runs inference on the preprocessed input tensor
-    pub fn run_inference(&mut self, input_tensor: Array4<f32>) -> Result<Vec<BoundingBox>, SessionError> {
+    pub fn run_inference(
+        &mut self,
+        input_tensor: Array4<f32>,
+    ) -> Result<Vec<BoundingBox>, SessionError> {
         let outputs: SessionOutputs = self
             .session
-            .run_inference(input_tensor)
+            .run_inference(&input_tensor)
             .map_err(|e| SessionError::Inference(e.to_string()))?;
 
         let (shape, data) = outputs["output0"]
             .try_extract_tensor::<f32>()
-            .map_err(|e| SessionError::Inference(format!("Failed to extract tensor: {}", e)))?;
+            .map_err(|e| SessionError::Inference(format!("Failed to extract tensor: {e}")))?;
 
         // Convert i64 shape to usize for ndarray
-        let shape_usize: Vec<usize> = shape.iter().map(|&dim| dim as usize).collect();
+        let shape_usize: Vec<usize> = shape
+            .iter()
+            .map(|&dim| usize::try_from(dim))
+            .collect::<Result<_, _>>()
+            .map_err(|e| SessionError::Inference(format!("Shape conversion error: {e}")))?;
 
         // Build ndarray from ONNX tensor
         let output = ndarray::Array::from_shape_vec(shape_usize, data.to_vec())
-            .map_err(|e| SessionError::Inference(format!("Failed to build ndarray: {}", e)))?;
+            .map_err(|e| SessionError::Inference(format!("Failed to build ndarray: {e}")))?;
 
         // Parse output using appropriate inference implementation
-        let boxes = self.inference.parse_output(&output, self.config.confidence_threshold);
+        let boxes = self
+            .inference
+            .parse_output(&output, self.config.confidence_threshold);
 
         Ok(boxes)
     }
 
     /// Loads and preprocesses an image
-    pub fn load_and_preprocess_image(&self, image_path: &str) -> Result<(RgbImage, LoadedImageU8), SessionError> {
+    pub fn load_and_preprocess_image(
+        &self,
+        image_path: &str,
+    ) -> Result<(RgbImage, LoadedImageU8), SessionError> {
         let loaded_image = load_image_u8_default(image_path, self.config.input_size)
-            .map_err(|e| SessionError::ImageProcessing(format!("Failed to load image: {}", e)))?;
+            .map_err(|e| SessionError::ImageProcessing(format!("Failed to load image:{e}")))?;
 
         let interleaved_data: Vec<u8> = loaded_image
             .image_array
@@ -114,7 +120,7 @@ impl YoloSession {
                 loaded_image.size.height as usize,
                 loaded_image.size.width as usize,
             ))
-            .map_err(|e| SessionError::ImageProcessing(format!("Failed to reshape image: {}", e)))?
+            .map_err(|e| SessionError::ImageProcessing(format!("Failed to reshape image: {e}")))?
             .permuted_axes((1, 2, 0))
             .iter()
             .copied()
@@ -125,7 +131,9 @@ impl YoloSession {
             loaded_image.size.height,
             interleaved_data,
         )
-            .ok_or_else(|| SessionError::ImageProcessing("Failed to create image from raw data".to_string()))?;
+        .ok_or_else(|| {
+            SessionError::ImageProcessing("Failed to create image from raw data".to_string())
+        })?;
 
         Ok((img, loaded_image))
     }
@@ -137,9 +145,11 @@ impl YoloSession {
         boxes: &[BoundingBox],
         image_path: &str,
         output_dir: Option<&str>,
+        format: Option<OutputFormat>,
     ) -> Result<(), SessionError> {
         let output_dir_str = output_dir.unwrap_or("output");
         let output_dir = Path::new(output_dir_str);
+        let format = format.unwrap_or_default();
 
         if !output_dir.exists() {
             std::fs::create_dir_all(output_dir)?;
@@ -150,20 +160,19 @@ impl YoloSession {
             .ok_or_else(|| SessionError::ImageProcessing("Invalid image path".to_string()))?;
 
         let image_output_path = output_dir.join(format!("{}.jpg", file_name.to_string_lossy()));
-        let txt_output_path = output_dir.join(format!("{}.txt", file_name.to_string_lossy()));
+        let output_path = output_dir.join(format!(
+            "{}.{}",
+            file_name.to_string_lossy(),
+            format.extension()
+        ));
 
         // Save image
-        image.save(&image_output_path)
-            .map_err(|e| SessionError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+        image
+            .save(&image_output_path)
+            .map_err(|e| SessionError::Io(std::io::Error::other(e)))?;
 
         // Save YOLO format detections
-        let (image_width, image_height) = image.dimensions();
-        output_to_yolo_txt_normalized(
-            boxes.to_vec(),
-            image_width,
-            image_height,
-            txt_output_path.to_str().unwrap(),
-        )?;
+        OutputFormat::output_detections(boxes, image.dimensions(), &output_path, Some(format))?;
 
         Ok(())
     }
@@ -181,7 +190,7 @@ impl YoloSession {
     ) -> Result<(), SessionError> {
         let (original_image, loaded_image) = self.load_and_preprocess_image(image_path)?;
 
-        let normalized_image = normalize_image_f32(&loaded_image, None);
+        let normalized_image = normalize_image_f32(&loaded_image, None, None);
         let mut inferred_boxes = self.run_inference(normalized_image.image_array)?;
 
         // Apply NMS if enabled
@@ -200,7 +209,13 @@ impl YoloSession {
             self.config.input_size,
         );
 
-        self.save_outputs(&result_image, &inferred_boxes, image_path, output_dir)?;
+        self.save_outputs(
+            &result_image,
+            &inferred_boxes,
+            image_path,
+            output_dir,
+            Some(OutputFormat::Json),
+        )?;
 
         Ok(())
     }
@@ -214,7 +229,9 @@ impl YoloSession {
         let results = image_paths
             .iter()
             .map(|path| {
-                let path_str = path.as_ref().to_str()
+                let path_str = path
+                    .as_ref()
+                    .to_str()
                     .ok_or_else(|| SessionError::ImageProcessing("Invalid path".to_string()))?;
                 self.process_image_with_output_dir(path_str, output_dir)
             })
@@ -222,27 +239,6 @@ impl YoloSession {
 
         Ok(results)
     }
-
-    /// Returns inference statistics
-    pub fn get_model_info(&self) -> ModelInfo {
-        ModelInfo {
-            model_name: self.model_name.clone(),
-            input_size: self.config.input_size,
-            confidence_threshold: self.config.confidence_threshold,
-            nms_threshold: self.config.nms_threshold,
-            use_nms: self.config.use_nms,
-        }
-    }
-}
-
-/// Model information struct
-#[derive(Debug, Clone)]
-pub struct ModelInfo {
-    pub model_name: String,
-    pub input_size: (u32, u32),
-    pub confidence_threshold: f32,
-    pub nms_threshold: f32,
-    pub use_nms: bool,
 }
 
 #[cfg(test)]

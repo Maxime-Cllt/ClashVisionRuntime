@@ -1,7 +1,7 @@
 //! Visualization utilities for drawing bounding boxes on images.
 
 use super::bbox::BoundingBox;
-use crate::image::image_util::{generate_class_colors};
+use crate::image::image_util::generate_class_colors;
 use image::{DynamicImage, RgbImage, RgbaImage};
 use raqote::{DrawOptions, DrawTarget, LineJoin, PathBuilder, SolidSource, Source, StrokeStyle};
 use std::collections::HashMap;
@@ -27,6 +27,7 @@ impl Default for DrawConfig {
 }
 
 /// Draws bounding boxes on an image with improved performance and customization.
+#[must_use]
 pub fn draw_bounding_boxes(
     image: &DynamicImage,
     boxes: &[BoundingBox],
@@ -41,7 +42,7 @@ pub fn draw_bounding_boxes(
     }
 
     let mut draw_target = DrawTarget::new(img_width as i32, img_height as i32);
-    let class_colors = generate_colors_for_boxes(boxes);
+    let class_colors: HashMap<usize, SolidSource> = generate_colors_for_boxes(boxes);
 
     // Pre-calculate scaling factors
     let scale_x = img_width as f32 / input_size.0 as f32;
@@ -63,12 +64,12 @@ pub fn draw_bounding_boxes(
 
 /// Generates colors for all unique classes in the bounding boxes.
 fn generate_colors_for_boxes(boxes: &[BoundingBox]) -> HashMap<usize, SolidSource> {
-    let unique_classes: Vec<usize> = boxes
-        .iter()
-        .map(|bbox| bbox.class_id)
-        .collect::<std::collections::HashSet<_>>()
-        .into_iter()
-        .collect();
+    if boxes.is_empty() {
+        return HashMap::new();
+    }
+
+    let unique_classes: std::collections::HashSet<usize> =
+        boxes.iter().map(|bbox| bbox.class_id).collect();
 
     if unique_classes.is_empty() {
         return HashMap::new();
@@ -105,6 +106,14 @@ fn draw_single_box(
         a: 0xFF,
     });
 
+    #[cfg(debug_assertions)]
+    {
+        println!(
+            "Drawing box: class_id={}, x1={}, y1={}, x2={}, y2={}, color={:?}",
+            bbox.class_id, bbox.x1, bbox.y1, bbox.x2, bbox.y2, color
+        );
+    }
+
     let stroke_style = StrokeStyle {
         join: LineJoin::Round,
         width: config.line_width,
@@ -133,7 +142,7 @@ fn blend_with_original_image(
         draw_target
             .into_vec()
             .into_iter()
-            .flat_map(|pixel| pixel.to_ne_bytes())
+            .flat_map(u32::to_ne_bytes)
             .collect(),
     )
     .expect("Failed to create RGBA image from draw target");
@@ -146,7 +155,7 @@ fn blend_with_original_image(
 
     // Optimized alpha blending
     for (x, y, rgba_pixel) in box_image_rgba.enumerate_pixels() {
-        let alpha = rgba_pixel[3] as u16;
+        let alpha = u16::from(rgba_pixel[3]);
 
         if alpha == 0 {
             continue; // Skip transparent pixels
@@ -157,8 +166,10 @@ fn blend_with_original_image(
 
         // Blend each color channel
         for i in 0..3 {
-            original_pixel[i] =
-                ((rgba_pixel[i] as u16 * alpha + original_pixel[i] as u16 * inv_alpha) / 255) as u8;
+            original_pixel[i] = u8::try_from(
+                (u16::from(rgba_pixel[i]) * alpha + u16::from(original_pixel[i]) * inv_alpha) / 255,
+            )
+            .unwrap_or(0);
         }
     }
 
@@ -166,10 +177,7 @@ fn blend_with_original_image(
 }
 
 // Backward compatibility function
-pub fn draw_boxes(
-    image: &DynamicImage,
-    boxes: &Vec<BoundingBox>,
-    input_size: (u32, u32),
-) -> RgbImage {
+#[must_use]
+pub fn draw_boxes(image: &DynamicImage, boxes: &[BoundingBox], input_size: (u32, u32)) -> RgbImage {
     draw_bounding_boxes(image, boxes, input_size, None)
 }
