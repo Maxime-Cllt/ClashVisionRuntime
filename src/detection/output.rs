@@ -7,16 +7,11 @@ use std::io::{self};
 use std::path::Path;
 
 /// Output format options
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum OutputFormat {
+    #[default]
     Yolo,
     Json,
-}
-
-impl Default for OutputFormat {
-    fn default() -> Self {
-        OutputFormat::Yolo
-    }
 }
 
 impl Serialize for OutputFormat {
@@ -25,8 +20,8 @@ impl Serialize for OutputFormat {
         S: serde::Serializer,
     {
         let s = match self {
-            OutputFormat::Yolo => "yolo",
-            OutputFormat::Json => "json",
+            Self::Yolo => "yolo",
+            Self::Json => "json",
         };
         serializer.serialize_str(s)
     }
@@ -38,17 +33,17 @@ impl OutputFormat {
         boxes: &[BoundingBox],
         image_dimensions: (u32, u32),
         output_path: &Path,
-        format: Option<OutputFormat>,
+        format: Option<Self>,
     ) -> io::Result<()> {
         let format: OutputFormat = format.unwrap_or_default();
         match format {
-            OutputFormat::Yolo => Self::output_to_yolo_txt_normalized(
-                boxes.to_vec(),
+            Self::Yolo => Self::output_to_yolo_txt_normalized(
+                &boxes,
                 image_dimensions.0,
                 image_dimensions.1,
                 output_path.to_str().unwrap(),
             ),
-            OutputFormat::Json => Self::output_to_coco_json(boxes, image_dimensions, output_path),
+            Self::Json => Self::output_to_coco_json(boxes, image_dimensions, output_path),
         }
     }
 
@@ -79,7 +74,7 @@ impl OutputFormat {
                 "x2": bbox.x2,
                 "y2": bbox.y2,
                 "width": width,
-                "height": height,                
+                "height": height,
                 "score": bbox.confidence,
             }));
         }
@@ -92,7 +87,7 @@ impl OutputFormat {
 
     /// Outputs normalized YOLO format with error handling
     fn output_to_yolo_txt_normalized(
-        boxes: Vec<BoundingBox>,
+        boxes: &[BoundingBox],
         image_width: u32,
         image_height: u32,
         output_path: &str,
@@ -108,7 +103,7 @@ impl OutputFormat {
         let estimated_size = boxes.len() * 50; // Rough estimate: 50 chars per line
         let mut yolo_output = String::with_capacity(estimated_size);
 
-        for bbox in &boxes {
+        for bbox in boxes {
             let (center_x, center_y) = bbox.center();
             let (width, height) = bbox.dimensions();
 
@@ -129,10 +124,12 @@ impl OutputFormat {
     }
 
     /// Returns the file extension for the output format
-    pub fn extension(&self) -> &'static str {
+    #[inline]
+    #[must_use]
+    pub const fn extension(&self) -> &'static str {
         match self {
-            OutputFormat::Yolo => "txt",
-            OutputFormat::Json => "json",
+            Self::Yolo => "txt",
+            Self::Json => "json",
         }
     }
 }
@@ -151,7 +148,7 @@ mod tests {
         ];
 
         OutputFormat::output_to_yolo_txt_normalized(
-            boxes,
+            &boxes,
             100,
             100,
             temp_file.path().to_str().unwrap(),
@@ -169,7 +166,7 @@ mod tests {
         let boxes = vec![BoundingBox::new(10.0, 20.0, 50.0, 80.0, 1, 0.9)];
 
         OutputFormat::output_to_yolo_txt_normalized(
-            boxes,
+            &boxes,
             100,
             100,
             temp_file.path().to_str().unwrap(),

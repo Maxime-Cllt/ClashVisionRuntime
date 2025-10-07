@@ -8,12 +8,13 @@ pub enum YoloType {
 }
 
 impl YoloType {
-    /// Returns the string representation of the YoloType variant.
+    /// Returns the string representation of the `YoloType` variant.
     #[inline]
+    #[must_use]
     pub const fn as_str(&self) -> &'static str {
         match self {
-            YoloType::YoloV8 => "YoloV8",
-            YoloType::YoloV10 => "YoloV10",
+            Self::YoloV8 => "YoloV8",
+            Self::YoloV10 => "YoloV10",
         }
     }
 }

@@ -6,10 +6,11 @@ use super::bbox::BoundingBox;
 ///
 /// # Arguments
 /// * `boxes` - Slice of bounding boxes to filter
-/// * `iou_threshold` - IoU threshold for suppression (typically 0.4-0.5)
+/// * `iou_threshold` - `IoU` threshold for suppression (typically 0.4-0.5)
 ///
 /// # Returns
 /// Vector of filtered bounding boxes
+#[must_use]
 pub fn nms(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
     if boxes.is_empty() {
         return Vec::new();
@@ -45,6 +46,7 @@ pub fn nms(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
 }
 
 /// Performs class-agnostic NMS
+#[must_use]
 pub fn nms_class_agnostic(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
     nms(boxes, iou_threshold)
 }

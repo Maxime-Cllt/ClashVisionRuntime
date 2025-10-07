@@ -50,6 +50,7 @@ impl BoundingBox {
 
     /// Calculates the intersection area with another bounding box
     #[inline]
+    #[must_use]
     pub fn intersection(&self, other: &Self) -> f32 {
         let width = (self.x2.min(other.x2) - self.x1.max(other.x1)).max(0.0);
         let height = (self.y2.min(other.y2) - self.y1.max(other.y1)).max(0.0);
@@ -58,12 +59,14 @@ impl BoundingBox {
 
     /// Calculates the union area with another bounding box
     #[inline]
+    #[must_use]
     pub fn union(&self, other: &Self) -> f32 {
         self.area() + other.area() - self.intersection(other)
     }
 
-    /// Calculates the Intersection over Union (IoU) with another bounding box
+    /// Calculates the Intersection over Union (`IoU`) with another bounding box
     #[inline]
+    #[must_use]
     pub fn iou(&self, other: &Self) -> f32 {
         let intersection = self.intersection(other);
         if intersection == 0.0 {
@@ -74,18 +77,21 @@ impl BoundingBox {
 
     /// Calculates the area of the bounding box
     #[inline]
+    #[must_use]
     pub fn area(&self) -> f32 {
         (self.x2 - self.x1) * (self.y2 - self.y1)
     }
 
     /// Returns the center coordinates
     #[inline]
+    #[must_use]
     pub fn center(&self) -> (f32, f32) {
         ((self.x1 + self.x2) * 0.5, (self.y1 + self.y2) * 0.5)
     }
 
     /// Returns the width and height
     #[inline]
+    #[must_use]
     pub fn dimensions(&self) -> (f32, f32) {
         (self.x2 - self.x1, self.y2 - self.y1)
     }

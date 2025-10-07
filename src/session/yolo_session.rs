@@ -45,7 +45,6 @@ impl Default for SessionConfig {
 pub struct YoloSession {
     session: OrtInferenceSession,
     config: SessionConfig,
-    model_type: YoloType,
     inference: Box<dyn YoloInference>,
 }
 
@@ -63,12 +62,11 @@ impl YoloSession {
     ) -> Result<Self, SessionError> {
         let session = OrtInferenceSession::new(Path::new(model_path))
             .map_err(|e| SessionError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
-        let inference = create_inference(model_type.clone());
+        let inference = create_inference(&model_type);
 
         Ok(Self {
             session,
             config,
-            model_type,
             inference,
         })
     }

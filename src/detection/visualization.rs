@@ -106,7 +106,8 @@ fn draw_single_box(
         a: 0xFF,
     });
 
-    #[cfg(debug_assertions)]{
+    #[cfg(debug_assertions)]
+    {
         println!(
             "Drawing box: class_id={}, x1={}, y1={}, x2={}, y2={}, color={:?}",
             bbox.class_id, bbox.x1, bbox.y1, bbox.x2, bbox.y2, color
@@ -141,7 +142,7 @@ fn blend_with_original_image(
         draw_target
             .into_vec()
             .into_iter()
-            .flat_map(|pixel| u32::to_ne_bytes(pixel))
+            .flat_map(u32::to_ne_bytes)
             .collect(),
     )
     .expect("Failed to create RGBA image from draw target");

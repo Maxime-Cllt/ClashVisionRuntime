@@ -12,8 +12,8 @@ impl ClashClass {
     /// Returns the string representation of the `ClashClass` variant.
     pub fn as_str(&self) -> &'static str {
         match self {
-            ClashClass::ElixirStorage => "Elixir Storage",
-            ClashClass::GoldStorage => "Gold Storage",
+            Self::ElixirStorage => "Elixir Storage",
+            Self::GoldStorage => "Gold Storage",
         }
     }
 
@@ -23,15 +23,18 @@ impl ClashClass {
         &VALUES
     }
 
-    /// Returns the RGB color associated with the ClashClass variant.
-    pub fn to_color(&self) -> (u8, u8, u8, u8) {
+    /// Returns the RGB color associated with the `ClashClass` variant.
+    #[inline]
+    #[must_use]
+    pub const fn to_color(&self) -> (u8, u8, u8, u8) {
         match self {
-            ClashClass::ElixirStorage => (255, 0, 255, 255), // Magenta
-            ClashClass::GoldStorage => (212, 175, 55, 255),  // Gold
+            Self::ElixirStorage => (255, 0, 255, 255), // Magenta
+            Self::GoldStorage => (212, 175, 55, 255),  // Gold
         }
     }
 
-    /// Returns a static slice of RGB colors corresponding to the ClashClass variants.
+    /// Returns a static slice of RGB colors corresponding to the `ClashClass` variants.
+    #[must_use]
     pub fn colors() -> &'static [(u8, u8, u8, u8)] {
         static COLORS: [(u8, u8, u8, u8); 2] = [
             (255, 0, 255, 255),  // Magenta for Elixir Storage
@@ -40,7 +43,9 @@ impl ClashClass {
         &COLORS
     }
 
-    /// Returns the number of ClashClass variants.
+    /// Returns the number of `ClashClass` variants.
+    #[inline]
+    #[must_use]
     pub fn num_classes() -> usize {
         Self::values().len()
     }
