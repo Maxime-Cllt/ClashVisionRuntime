@@ -35,10 +35,10 @@ impl OutputFormat {
         output_path: &Path,
         format: Option<Self>,
     ) -> io::Result<()> {
-        let format: OutputFormat = format.unwrap_or_default();
+        let format: Self = format.unwrap_or_default();
         match format {
             Self::Yolo => Self::output_to_yolo_txt_normalized(
-                &boxes,
+                boxes,
                 image_dimensions.0,
                 image_dimensions.1,
                 output_path.to_str().unwrap(),

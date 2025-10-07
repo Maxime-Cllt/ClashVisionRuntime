@@ -7,8 +7,10 @@ pub struct NormalizationConfig {
 }
 
 impl NormalizationConfig {
-    /// Predefined normalization config for ImageNet models
-    pub fn imagenet() -> Self {
+    /// Predefined normalization config for `ImageNet` models
+    #[inline]
+    #[must_use]
+    pub const fn imagenet() -> Self {
         Self {
             mean: IMAGENET_MEAN,
             std: IMAGENET_STD,
@@ -16,7 +18,9 @@ impl NormalizationConfig {
     }
 
     /// No normalization (mean=0, std=1)
-    pub fn none() -> Self {
+    #[inline]
+    #[must_use]
+    pub const fn none() -> Self {
         Self {
             mean: DEFAULT_MEAN,
             std: DEFAULT_STD,

@@ -14,12 +14,15 @@ pub type LoadedImageU8 = LoadedImage<u8>;
 pub type LoadedImageF32 = LoadedImage<f32>;
 
 impl<T> LoadedImage<T> {
-    /// Creates a new LoadedImage
-    pub fn new(image_array: Array4<T>, size: ImageSize) -> Self {
+    /// Creates a new `LoadedImage`
+    #[inline]
+    pub const fn new(image_array: Array4<T>, size: ImageSize) -> Self {
         Self { image_array, size }
     }
 
     /// Returns the shape of the image array
+    #[inline]
+    #[must_use]
     pub fn shape(&self) -> &[usize] {
         self.image_array.shape()
     }
@@ -37,7 +40,7 @@ mod tests {
             width: 2,
             height: 2,
         };
-        let loaded_image = LoadedImage::new(image_array.clone(), size.clone());
+        let loaded_image = LoadedImage::new(image_array.clone(), size);
 
         assert_eq!(loaded_image.image_array, image_array);
         assert_eq!(loaded_image.size.width, size.width);
@@ -51,7 +54,7 @@ mod tests {
             width: 2,
             height: 2,
         };
-        let loaded_image = LoadedImage::new(image_array.clone(), size);
+        let loaded_image = LoadedImage::new(image_array, size);
 
         assert_eq!(loaded_image.shape(), &[2, 2, 1, 1]);
     }

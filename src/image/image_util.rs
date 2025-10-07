@@ -31,8 +31,8 @@ pub fn load_image_u8(
     }
 
     let image = image::open(image_path)?;
-    let resized_padded = resize_and_pad_image(image, config)?;
-    let array = image_to_array(resized_padded, config.target_size);
+    let resized_padded = resize_and_pad_image(&image, config);
+    let array = image_to_array(&resized_padded, config.target_size);
 
     Ok(LoadedImageU8::new(array, config.target_size))
 }
@@ -51,9 +51,9 @@ pub fn load_image_u8_default(
 
 /// Resizes image while maintaining aspect ratio and adds padding
 fn resize_and_pad_image(
-    image: image::DynamicImage,
+    image: &image::DynamicImage,
     config: &ImageConfig,
-) -> Result<ImageBuffer<Rgb<u8>, Vec<u8>>, ImageLoadError> {
+) -> ImageBuffer<Rgb<u8>, Vec<u8>> {
     let (orig_width, orig_height) = (image.width(), image.height());
     let target_size = config.target_size;
 
@@ -84,21 +84,21 @@ fn resize_and_pad_image(
         padded_image.put_pixel(x + pad_left, y + pad_top, *pixel);
     }
 
-    Ok(padded_image)
+    padded_image
 }
 
-/// Converts ImageBuffer to ndarray with NCHW format
-fn image_to_array(image: ImageBuffer<Rgb<u8>, Vec<u8>>, size: ImageSize) -> Array4<u8> {
+/// Converts `ImageBuffer` to ndarray with NCHW format
+fn image_to_array(image: &ImageBuffer<Rgb<u8>, Vec<u8>>, size: ImageSize) -> Array4<u8> {
     Array4::from_shape_fn(
         (1, 3, size.height as usize, size.width as usize),
         |(_, c, y, x)| {
-            let pixel = image.get_pixel(x as u32, y as u32);
+            let pixel =
+                image.get_pixel(u32::try_from(x).unwrap_or(0), u32::try_from(y).unwrap_or(0));
+
             pixel.channels()[c]
         },
     )
 }
-
-/// Normalizes image from u8 to f32 with specified mean and standard deviation
 
 /// Normalizes the image using the provided mean and std deviation.
 pub fn normalize_image_f32(
@@ -109,7 +109,7 @@ pub fn normalize_image_f32(
     let mean = mean.unwrap_or(DEFAULT_MEAN);
     let std = std.unwrap_or(DEFAULT_STD);
 
-    let mut array = loaded_image.image_array.mapv(|x| x as f32 / 255.0);
+    let mut array = loaded_image.image_array.mapv(|x| f32::from(x) / 255.0);
 
     for c in 0..3 {
         array
@@ -119,11 +119,12 @@ pub fn normalize_image_f32(
 
     LoadedImageF32 {
         image_array: array,
-        size: loaded_image.size.clone(),
+        size: loaded_image.size,
     }
 }
 
 /// Generates distinct colors for each class using a more sophisticated color scheme
+#[must_use]
 pub fn generate_class_colors() -> HashMap<usize, SolidSource> {
     let num_classes = ClashClass::num_classes();
     let mut class_colors = HashMap::with_capacity(num_classes);
@@ -140,6 +141,7 @@ pub fn generate_class_colors() -> HashMap<usize, SolidSource> {
 }
 
 /// Generates colors using HSV color space for better distribution
+#[must_use]
 pub fn generate_distinct_colors(num_colors: usize) -> Vec<SolidSource> {
     (0..num_colors)
         .map(|i| {

@@ -52,6 +52,7 @@ pub fn nms_class_agnostic(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<Boun
 }
 
 /// Performs per-class NMS
+#[must_use]
 pub fn nms_per_class(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
     use std::collections::HashMap;
 

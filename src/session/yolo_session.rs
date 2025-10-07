@@ -51,17 +51,17 @@ pub struct YoloSession {
 impl YoloSession {
     /// Creates a new YOLO session with default configuration
     pub fn new(model_path: &str, model_type: YoloType) -> Result<Self, SessionError> {
-        Self::with_config(model_path, model_type, SessionConfig::default())
+        Self::with_config(model_path, &model_type, SessionConfig::default())
     }
 
     /// Creates a new YOLO session with custom configuration
     pub fn with_config(
         model_path: &str,
-        model_type: YoloType,
+        model_type: &YoloType,
         config: SessionConfig,
     ) -> Result<Self, SessionError> {
         let session = OrtInferenceSession::new(Path::new(model_path))
-            .map_err(|e| SessionError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+            .map_err(|e| SessionError::Io(std::io::Error::other(e)))?;
         let inference = create_inference(&model_type);
 
         Ok(Self {
@@ -78,15 +78,21 @@ impl YoloSession {
     ) -> Result<Vec<BoundingBox>, SessionError> {
         let outputs: SessionOutputs = self
             .session
-            .run_inference(input_tensor)
+            .run_inference(&input_tensor)
             .map_err(|e| SessionError::Inference(e.to_string()))?;
 
         let (shape, data) = outputs["output0"]
             .try_extract_tensor::<f32>()
-            .map_err(|e| SessionError::Inference(format!("Failed to extract tensor: {}", e)))?;
+            .map_err(|e| SessionError::Inference(format!("Failed to extract tensor: {e}")))?;
+
 
         // Convert i64 shape to usize for ndarray
-        let shape_usize: Vec<usize> = shape.iter().map(|&dim| dim as usize).collect();
+        let shape_usize: Vec<usize> = shape
+            .iter()
+            .map(|&dim| usize::try_from(dim))
+            .collect::<Result<_, _>>()
+            .map_err(|e| SessionError::Inference(format!("Shape conversion error: {e}")))?;
+
 
         // Build ndarray from ONNX tensor
         let output = ndarray::Array::from_shape_vec(shape_usize, data.to_vec())

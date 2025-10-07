@@ -19,8 +19,8 @@ impl ClashClass {
         }
     }
 
-    /// Returns a static slice of all ClashClass variants.
-    pub fn values() -> &'static [ClashClass] {
+    /// Returns a static slice of all `ClashClass` variants.
+    pub fn values() -> &'static [Self] {
         static VALUES: [ClashClass; 2] = [ClashClass::ElixirStorage, ClashClass::GoldStorage];
         &VALUES
     }

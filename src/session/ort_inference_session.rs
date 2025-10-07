@@ -23,7 +23,7 @@ impl OrtInferenceSession {
     /// Runs inference on the provided input image tensor.
     pub fn run_inference(
         &mut self,
-        input_image: ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
+        input_image: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
     ) -> ort::Result<SessionOutputs<'_>> {
         let time_pre_compute = Instant::now();
 

@@ -14,7 +14,9 @@ pub struct ImageConfig {
 
 impl ImageConfig {
     /// Creates a new ImageConfig with specified parameters
-    pub fn new(
+    #[inline]
+    #[must_use]
+    pub const fn new(
         target_size: ImageSize,
         filter_type: FilterType,
         padding_color: [u8; 3],
