@@ -130,7 +130,7 @@ pub fn generate_class_colors() -> HashMap<usize, SolidSource> {
     let mut class_colors = HashMap::with_capacity(num_classes);
 
     // Use predefined colors if available
-    let predefined_colors = ClashClass::colors();
+    let predefined_colors = ClashClass::rgb_colors();
 
     for (i, &color) in predefined_colors.iter().enumerate() {
         let (r, g, b, a) = color;
