@@ -16,10 +16,6 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0-3C8DAD?style=for-the-badge&logo=open-source-initiative&logoColor=white" alt="License" />
 </div>
 
-<div align="center">
-  <img src="assets/village_1759583099.png" width="500px" height="500px" alt="Village" />
-</div>
-
 ## 🚀 Overview
 
 **ClashVisionRuntime** is a high-performance Rust runtime designed for executing YOLOv8 models using ONNX Runtime. It
@@ -55,6 +51,14 @@ cargo run --release -- "path/to/image.png"
 - **Output File**: Path where the JSON analysis report will be saved
 
 ## 📊 Output Format
+
+### Image
+
+<div align="center">
+  <img src="assets/village_1759583099.png" width="450px" alt="Village" />
+</div>
+
+### JSON Report
 
 ClashVisionRuntime generates detailed JSON reports with the following structure:
 
