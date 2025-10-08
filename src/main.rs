@@ -15,10 +15,9 @@ fn main() {
     }
 
     let image_path: String = args[1].clone();
-    let yolo_type: YoloType = YoloType::try_from("yolov8").expect("Failed to parse YOLO type");
 
     // Use the embedded model bytes instead of a file path
-    let mut yolo_model = YoloSession::from_bytes(MODEL_BYTES, yolo_type)
+    let mut yolo_model = YoloSession::from_bytes(MODEL_BYTES, YoloType::YoloV8)
         .expect("Failed to create YOLO model from embedded bytes");
 
     yolo_model
