@@ -19,6 +19,12 @@ impl OrtInferenceSession {
         Ok(Self { session })
     }
 
+    /// Creates a new ONNX Runtime inference session from model bytes.
+    pub fn from_bytes(model_bytes: &[u8]) -> ort::Result<Self> {
+        let session: Session = SessionBuilder::new()?.commit_from_memory(model_bytes)?;
+        Ok(Self { session })
+    }
+
     /// Runs inference on the provided input image tensor.
     pub fn run_inference(
         &mut self,

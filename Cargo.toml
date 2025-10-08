@@ -1,6 +1,6 @@
 [package]
 name = "ClashVisionRuntime"
-version = "0.5.0"
+version = "0.6.0"
 license = "GPL-3.0"
 repository = "https://github.com/Maxime-Cllt/ClashVisionRuntime.git"
 categories = ["accessibility", "command-line-interface"]
@@ -26,7 +26,7 @@ tempfile = "3.23.0"
 [lib]
 name = "clashvision"
 path = "src/lib.rs"
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [profile.dev]
 # Development profile for debug builds
