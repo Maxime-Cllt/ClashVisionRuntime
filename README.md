@@ -16,10 +16,6 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0-3C8DAD?style=for-the-badge&logo=open-source-initiative&logoColor=white" alt="License" />
 </div>
 
-<div align="center">
-  <img src="assets/village_1759583099.png" width="500px" height="500px" alt="Village" />
-</div>
-
 ## 🚀 Overview
 
 **ClashVisionRuntime** is a high-performance Rust runtime designed for executing YOLOv8 models using ONNX Runtime. It
