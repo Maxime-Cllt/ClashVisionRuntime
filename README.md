@@ -56,6 +56,14 @@ cargo run --release -- "path/to/image.png"
 
 ## 📊 Output Format
 
+### Image
+
+<div align="center">
+  <img src="assets/village_1759583099.png" width="450px" alt="Village" />
+</div>
+
+### JSON Report
+
 ClashVisionRuntime generates detailed JSON reports with the following structure:
 
 ```json
