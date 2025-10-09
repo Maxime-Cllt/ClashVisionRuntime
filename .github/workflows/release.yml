@@ -5,7 +5,8 @@ permissions:
 
 on:
   push:
-    branches: [ "main" , "master", "gha-release" ]
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       version:
@@ -172,7 +173,71 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libssl-dev pkg-config
+          sudo apt-get install -y \
+            libssl-dev \
+            pkg-config \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libgtk-3-dev \
+            libasound2-dev \
+            cmake \
+            build-essential
+
+      - name: Install ONNX Runtime (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          # Set ONNX Runtime version (update as needed)
+          $ONNX_VERSION = "1.17.1"
+          
+          # Determine architecture
+          if ("${{ matrix.target }}" -eq "x86_64-pc-windows-msvc") {
+            $ARCH = "x64"
+          } elseif ("${{ matrix.target }}" -eq "aarch64-pc-windows-msvc") {
+            $ARCH = "arm64"
+          } else {
+            $ARCH = "x64"  # fallback
+          }
+          
+          # Download ONNX Runtime
+          $URL = "https://github.com/microsoft/onnxruntime/releases/download/v$ONNX_VERSION/onnxruntime-win-$ARCH-$ONNX_VERSION.zip"
+          $ZIP_PATH = "onnxruntime.zip"
+          $EXTRACT_PATH = "C:\onnxruntime"
+          
+          Write-Host "::notice::Downloading ONNX Runtime $ONNX_VERSION for $ARCH"
+          Invoke-WebRequest -Uri $URL -OutFile $ZIP_PATH
+          
+          # Extract archive
+          Expand-Archive -Path $ZIP_PATH -DestinationPath $EXTRACT_PATH -Force
+          
+          # Find the extracted directory (it has version in name)
+          $ONNX_DIR = Get-ChildItem -Path $EXTRACT_PATH -Directory | Select-Object -First 1
+          $ONNX_FULL_PATH = $ONNX_DIR.FullName
+          
+          Write-Host "::notice::ONNX Runtime extracted to: $ONNX_FULL_PATH"
+          
+          # Set environment variables for this job
+          echo "ORT_LIB_LOCATION=$ONNX_FULL_PATH\lib" >> $env:GITHUB_ENV
+          echo "ORT_DYLIB_PATH=$ONNX_FULL_PATH\lib" >> $env:GITHUB_ENV
+          echo "$ONNX_FULL_PATH\lib" >> $env:GITHUB_PATH
+          
+          # Also add to Windows PATH for DLL discovery
+          $currentPath = [Environment]::GetEnvironmentVariable("PATH", "Process")
+          [Environment]::SetEnvironmentVariable("PATH", "$currentPath;$ONNX_FULL_PATH\lib", "Process")
+          
+          # Verify installation
+          Write-Host "::notice::ONNX Runtime files:"
+          Get-ChildItem -Path "$ONNX_FULL_PATH\lib" -Name "*.dll" | ForEach-Object { Write-Host "  $_" }
+
+      - name: Install system dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install pkg-config
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -188,28 +253,67 @@ jobs:
         run: |
           cargo build --release --target ${{ matrix.target }}
 
+      - name: Bundle Windows DLLs
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          $target = "${{ matrix.target }}"
+          $binaryPath = "target\$target\release\ClashVisionRuntime.exe"
+          $bundleDir = "ClashVisionRuntime-$target-bundle"
+          
+          # Create bundle directory
+          New-Item -ItemType Directory -Path $bundleDir -Force
+          
+          # Copy main executable
+          Copy-Item $binaryPath "$bundleDir\ClashVisionRuntime.exe"
+          
+          # Copy ONNX Runtime DLLs if they exist
+          if (Test-Path $env:ORT_DYLIB_PATH) {
+            Write-Host "::notice::Bundling ONNX Runtime DLLs"
+            Get-ChildItem -Path $env:ORT_DYLIB_PATH -Name "*.dll" | ForEach-Object {
+              Copy-Item "$env:ORT_DYLIB_PATH\$_" "$bundleDir\"
+              Write-Host "  Bundled: $_"
+            }
+          }
+          
+          # Create a simple batch file to run the executable
+          @"
+          @echo off
+          cd /d "%~dp0"
+          ClashVisionRuntime.exe %*
+          "@ | Out-File -FilePath "$bundleDir\run.bat" -Encoding ascii
+          
+          # Create ZIP archive
+          Compress-Archive -Path "$bundleDir\*" -DestinationPath "ClashVisionRuntime-$target.zip" -Force
+          
+          echo "BUNDLE_PATH=ClashVisionRuntime-$target.zip" >> $env:GITHUB_ENV
+
       - name: Prepare binary for upload
         shell: bash
         run: |
           target="${{ matrix.target }}"
           
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            binary_name="ClashVisionRuntime.exe"
-            artifact_name="ClashVisionRuntime-${target}.exe"
+            # For Windows, we use the bundled ZIP
+            artifact_name="ClashVisionRuntime-${target}.zip"
+            echo "ARTIFACT_NAME=${artifact_name}" >> $GITHUB_ENV
+            echo "ARTIFACT_PATH=${artifact_name}" >> $GITHUB_ENV
           else
+            # For Unix systems, use the binary directly
             binary_name="ClashVisionRuntime"
             artifact_name="ClashVisionRuntime-${target}"
+          
+            cp "target/${target}/release/${binary_name}" "${artifact_name}"
+          
+            echo "ARTIFACT_NAME=${artifact_name}" >> $GITHUB_ENV
+            echo "ARTIFACT_PATH=${artifact_name}" >> $GITHUB_ENV
           fi
-          
-          cp "target/${target}/release/${binary_name}" "${artifact_name}"
-          
-          echo "ARTIFACT_NAME=${artifact_name}" >> $GITHUB_ENV
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_PATH }}
           if-no-files-found: error
           retention-days: 1
 
@@ -243,6 +347,19 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: false
           token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            ## Installation Notes
+            
+            ### Windows
+            - Download the `.zip` file for your architecture (x64 or ARM64)
+            - Extract the archive to your desired location
+            - Run `ClashVisionRuntime.exe` or use the provided `run.bat` script
+            - All required DLLs are bundled in the archive
+            
+            ### Linux/macOS
+            - Download the binary for your platform
+            - Make it executable: `chmod +x ClashVisionRuntime-<target>`
+            - Run directly: `./ClashVisionRuntime-<target>`
 
   summary:
     needs: [determine-version, build, create-release]
@@ -271,4 +388,8 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "🎉 **Release created successfully!**" >> $GITHUB_STEP_SUMMARY
             echo "[View Release](https://github.com/${{ github.repository }}/releases/tag/${{ needs.determine-version.outputs.tag_version }})" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Package Notes:" >> $GITHUB_STEP_SUMMARY
+            echo "- **Windows**: Bundled with ONNX Runtime DLLs in ZIP archives" >> $GITHUB_STEP_SUMMARY
+            echo "- **Linux/macOS**: Standalone binaries" >> $GITHUB_STEP_SUMMARY
           fi
