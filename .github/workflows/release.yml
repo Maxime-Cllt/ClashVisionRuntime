@@ -238,27 +238,27 @@ jobs:
       - name: Rename binary (Linux & macOS)
         if: ${{ matrix.os != 'windows-latest' }}
         run: |
-          mv target/${{ matrix.target }}/release/DBMSCleaner target/${{ matrix.target }}/release/DBMSCleaner-${{ matrix.target }}
+          mv target/${{ matrix.target }}/release/ClashVisionRuntime target/${{ matrix.target }}/release/ClashVisionRuntime-${{ matrix.target }}
 
       - name: Rename binary (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          mv target/${{ matrix.target }}/release/DBMSCleaner.exe target/${{ matrix.target }}/release/DBMSCleaner-${{ matrix.target }}.exe
+          mv target/${{ matrix.target }}/release/ClashVisionRuntime.exe target/${{ matrix.target }}/release/ClashVisionRuntime-${{ matrix.target }}.exe
 
       - name: Upload release binary (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         uses: actions/upload-artifact@v4
         with:
-          name: DBMSCleaner-${{ matrix.target }}.exe
-          path: target/${{ matrix.target }}/release/DBMSCleaner-${{ matrix.target }}.exe
+          name: ClashVisionRuntime-${{ matrix.target }}.exe
+          path: target/${{ matrix.target }}/release/ClashVisionRuntime-${{ matrix.target }}.exe
           compression-level: '9'
 
       - name: Upload release binary (Linux & macOS)
         if: ${{ matrix.os != 'windows-latest' }}
         uses: actions/upload-artifact@v4
         with:
-          name: DBMSCleaner-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/DBMSCleaner-${{ matrix.target }}
+          name: ClashVisionRuntime-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/ClashVisionRuntime-${{ matrix.target }}
           compression-level: '9'
 
   upload-release:
