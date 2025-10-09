@@ -5,7 +5,7 @@ permissions:
 
 on:
   push:
-    branches : ["main", "master", "gha-release"]
+    branches : ["main", "master"]
   workflow_dispatch:
     inputs:
       version:
@@ -192,7 +192,7 @@ jobs:
         shell: powershell
         run: |
           # Set ONNX Runtime version (update as needed)
-          $ONNX_VERSION = "1.17.1"
+          $ONNX_VERSION = "1.23.1"
           
           # Determine architecture
           if ("${{ matrix.target }}" -eq "x86_64-pc-windows-msvc") {
