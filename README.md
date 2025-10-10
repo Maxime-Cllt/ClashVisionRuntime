@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/ONNX_Runtime-005CED?style=for-the-badge&logo=onnx&logoColor=white" alt="ONNX Runtime" />
 
   <!-- Version -->
-  <img src="https://img.shields.io/badge/Version-1.0.0-6c63ff?style=for-the-badge" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-0.7.1-6c63ff?style=for-the-badge" alt="Version" />
 
   <!-- License -->
   <img src="https://img.shields.io/badge/License-GPL--3.0-3C8DAD?style=for-the-badge&logo=open-source-initiative&logoColor=white" alt="License" />
