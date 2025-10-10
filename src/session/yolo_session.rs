@@ -1,15 +1,15 @@
+use crate::detection::BoundingBox;
 use crate::detection::nms::{nms, nms_per_class};
 use crate::detection::output::OutputFormat;
 use crate::detection::visualization::DrawConfig;
-use crate::detection::BoundingBox;
 use crate::image::image_util::load_image_u8_default;
 use crate::image::image_util::normalize_image_f32;
 use crate::image::loaded_image::LoadedImageU8;
-use crate::model::inference::{create_inference, YoloInference};
+use crate::model::inference::{YoloInference, create_inference};
 use crate::model::yolo_type::YoloType;
+use crate::session::SessionError;
 use crate::session::ort_inference_session::OrtInferenceSession;
 use crate::session::session_config::SessionConfig;
-use crate::session::SessionError;
 use image::{DynamicImage, RgbImage};
 use ndarray::Array4;
 use ort::session::SessionOutputs;

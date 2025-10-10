@@ -1,3 +1,4 @@
+use clashvision::MODEL_BYTES;
 use clashvision::model::yolo_type::YoloType;
 use clashvision::session::yolo_session::YoloSession;
 use criterion::{Criterion, criterion_group, criterion_main};
@@ -5,10 +6,10 @@ use criterion::{Criterion, criterion_group, criterion_main};
 #[allow(dead_code)]
 fn bench_process_image() {
     const IMAGE_PATH: &str = "assets/village_1759583099.png";
-    const MODEL_PATH: &str = "models/best.onnx";
 
-    let mut yolo_model: YoloSession =
-        YoloSession::new(MODEL_PATH, YoloType::YoloV8).expect("Failed to create YOLO model");
+    // Use the embedded model bytes
+    let mut yolo_model = YoloSession::from_bytes(MODEL_BYTES, YoloType::YoloV8)
+        .expect("Failed to create YOLO model from embedded bytes");
 
     yolo_model
         .process_image(IMAGE_PATH)

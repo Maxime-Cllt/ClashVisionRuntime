@@ -156,7 +156,8 @@ mod tests {
         )?;
 
         let content = fs::read_to_string(temp_file.path())?;
-        let expected = "1 0.300000 0.500000 0.400000 0.600000\n2 0.500000 0.650000 0.400000 0.500000\n";
+        let expected =
+            "1 0.300000 0.500000 0.400000 0.600000\n2 0.500000 0.650000 0.400000 0.500000\n";
         assert_eq!(content, expected);
 
         Ok(())
@@ -183,7 +184,6 @@ mod tests {
 
         let content = fs::read_to_string(temp_file.path())?;
         assert_eq!(content.trim(), "1 0.300000 0.500000 0.400000 0.600000");
-
 
         Ok(())
     }
