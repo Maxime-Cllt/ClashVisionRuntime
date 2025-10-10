@@ -62,7 +62,7 @@ impl Debug for ClashClass {
 
 impl Into<usize> for ClashClass {
     fn into(self) -> usize {
-       self as usize
+        self as usize
     }
 }
 

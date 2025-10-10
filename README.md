@@ -35,6 +35,7 @@ Clash of Clans.
 ### Required Tools
 
 - **[Rust](https://www.rust-lang.org/tools/install)**
+- **[ONNX Library](https://onnxruntime.ai/docs/build/)**
 
 ## 🚀 Usage
 

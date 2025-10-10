@@ -1,6 +1,7 @@
 use crate::detection::visualization::DrawConfig;
 
-/// Configuration for YOLO session
+/// Configuration for YOLO session settings.
+/// Includes parameters for input size, NMS settings, confidence thresholds, and drawing configurations.
 #[derive(Debug, Clone)]
 pub struct SessionConfig {
     pub input_size: (u32, u32),
@@ -14,12 +15,12 @@ pub struct SessionConfig {
 impl Default for SessionConfig {
     fn default() -> Self {
         Self {
-            input_size: (640, 640),
-            use_nms: true,
-            nms_threshold: 0.45,
-            confidence_threshold: 0.25,
-            use_per_class_nms: false,
-            draw_config: DrawConfig::default(),
+            input_size: (640, 640),             // Width, Height
+            use_nms: true,                      // Whether to apply Non-Maximum Suppression
+            nms_threshold: 0.45,                // IoU threshold for NMS
+            confidence_threshold: 0.25,         // Minimum confidence for detections
+            use_per_class_nms: false,           // Whether to apply NMS per class
+            draw_config: DrawConfig::default(), // Default drawing configuration
         }
     }
 }

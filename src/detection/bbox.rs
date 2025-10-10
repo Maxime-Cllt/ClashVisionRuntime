@@ -142,4 +142,65 @@ mod tests {
         let iou = bbox1.iou(&bbox2);
         assert!((iou - 0.142_857).abs() < 0.001);
     }
+
+    #[test]
+    fn test_no_intersection_iou() {
+        let bbox1 = BoundingBox::new(0.0, 0.0, 10.0, 10.0, 0, 0.9);
+        let bbox2 = BoundingBox::new(20.0, 20.0, 30.0, 30.0, 0, 0.8);
+        let iou = bbox1.iou(&bbox2);
+        assert_eq!(iou, 0.0);
+    }
+
+    #[test]
+    fn test_scale() {
+        let mut bbox = BoundingBox::new(10.0, 20.0, 50.0, 80.0, 1, 0.9);
+        bbox.scale(2.0, 3.0);
+        assert_eq!(bbox.x1, 20.0);
+        assert_eq!(bbox.y1, 60.0);
+        assert_eq!(bbox.x2, 100.0);
+        assert_eq!(bbox.y2, 240.0);
+    }
+
+    #[test]
+    fn test_scaled() {
+        let bbox = BoundingBox::new(10.0, 20.0, 50.0, 80.0, 1, 0.9);
+        let scaled_bbox = bbox.scaled(2.0, 3.0);
+        assert_eq!(scaled_bbox.x1, 20.0);
+        assert_eq!(scaled_bbox.y1, 60.0);
+        assert_eq!(scaled_bbox.x2, 100.0);
+        assert_eq!(scaled_bbox.y2, 240.0);
+        // Original bbox should remain unchanged
+        assert_eq!(bbox.x1, 10.0);
+        assert_eq!(bbox.y1, 20.0);
+        assert_eq!(bbox.x2, 50.0);
+        assert_eq!(bbox.y2, 80.0);
+    }
+
+    #[test]
+    fn test_intersection() {
+        let bbox1 = BoundingBox::new(0.0, 0.0, 10.0, 10.0, 0, 0.9);
+        let bbox2 = BoundingBox::new(5.0, 5.0, 15.0, 15.0, 0, 0.8);
+        let intersection = bbox1.intersection(&bbox2);
+        assert_eq!(intersection, 25.0);
+    }
+
+    #[test]
+    fn test_union() {
+        let bbox1 = BoundingBox::new(0.0, 0.0, 10.0, 10.0, 0, 0.9);
+        let bbox2 = BoundingBox::new(5.0, 5.0, 15.0, 15.0, 0, 0.8);
+        let union = bbox1.union(&bbox2);
+        assert_eq!(union, 175.0);
+    }
+
+    #[test]
+    fn test_area() {
+        let bbox = BoundingBox::new(10.0, 20.0, 50.0, 80.0, 1, 0.9);
+        assert_eq!(bbox.area(), 2400.0);
+    }
+
+    #[test]
+    fn test_center() {
+        let bbox = BoundingBox::new(10.0, 20.0, 50.0, 80.0, 1, 0.9);
+        assert_eq!(bbox.center(), (30.0, 50.0));
+    }
 }
