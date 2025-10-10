@@ -2,7 +2,7 @@ name: Update Version Badge in Markdown Files
 
 on:
   push:
-    branches: [ main, master]
+    branches: [ "main", "master" ]
     paths: [ 'Cargo.toml' ] # Trigger only when Cargo.toml changes
   workflow_dispatch:
 
@@ -46,7 +46,7 @@ jobs:
             echo "Checking file: $file"
             if grep -q "img.shields.io/badge/Version-" "$file"; then
               echo "Updating badge in: $file"
-              sed -i "s|https://img\.shields\.io/badge/Version-[^-]*-informational|https://img.shields.io/badge/Version-$VERSION-informational|g" "$file"
+              sed -i "s|https://img\.shields\.io/badge/Version-[^-]*-|https://img.shields.io/badge/Version-$VERSION-|g" "$file"
             fi
           done
 
