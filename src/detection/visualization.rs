@@ -2,7 +2,7 @@
 
 use super::bbox::BoundingBox;
 use crate::image::image_util::generate_class_colors;
-use image::{DynamicImage, RgbImage, RgbaImage};
+use image::{DynamicImage, RgbImage};
 use raqote::{DrawOptions, DrawTarget, LineJoin, PathBuilder, SolidSource, Source, StrokeStyle};
 use std::collections::HashMap;
 
@@ -158,50 +158,31 @@ impl DrawConfig {
         draw_target: DrawTarget,
         alpha_blend: bool,
     ) -> RgbImage {
-        let (img_width, img_height) = (original.width(), original.height());
-
-        // Fix: Convert BGRA to RGBA properly
-        let raw_data = draw_target.into_vec();
-        let mut rgba_data = Vec::with_capacity(raw_data.len() * 4);
-
-        for pixel in raw_data {
-            // raqote uses BGRA format, so we need to convert to RGBA
-            let b = (pixel & 0xFF) as u8;
-            let g = ((pixel >> 8) & 0xFF) as u8;
-            let r = ((pixel >> 16) & 0xFF) as u8;
-            let a = ((pixel >> 24) & 0xFF) as u8;
-
-            rgba_data.extend_from_slice(&[r, g, b, a]);
-        }
-
-        let box_image_rgba = RgbaImage::from_raw(img_width, img_height, rgba_data)
-            .expect("Failed to create RGBA image from draw target");
-
         let mut result = original.to_rgb8();
 
         if !alpha_blend {
             return result;
         }
 
-        // Optimized alpha blending
-        for (x, y, rgba_pixel) in box_image_rgba.enumerate_pixels() {
-            let alpha = u16::from(rgba_pixel[3]);
+        // Process raw BGRA u32 buffer directly, blending into the RGB result
+        let bgra_data = draw_target.into_vec();
+        let result_buf = result.as_mut();
 
-            if alpha == 0 {
-                continue; // Skip transparent pixels
+        for (i, &pixel) in bgra_data.iter().enumerate() {
+            let a = (pixel >> 24) & 0xFF;
+            if a == 0 {
+                continue;
             }
 
-            let original_pixel = result.get_pixel_mut(x, y);
-            let inv_alpha = 255 - alpha;
+            let r = (pixel >> 16) & 0xFF;
+            let g = (pixel >> 8) & 0xFF;
+            let b = pixel & 0xFF;
+            let inv_a = 255 - a;
 
-            // Blend each color channel
-            for i in 0..3 {
-                original_pixel[i] = u8::try_from(
-                    (u16::from(rgba_pixel[i]) * alpha + u16::from(original_pixel[i]) * inv_alpha)
-                        / 255,
-                )
-                .unwrap_or(0);
-            }
+            let dst = i * 3;
+            result_buf[dst] = ((r * a + result_buf[dst] as u32 * inv_a) / 255) as u8;
+            result_buf[dst + 1] = ((g * a + result_buf[dst + 1] as u32 * inv_a) / 255) as u8;
+            result_buf[dst + 2] = ((b * a + result_buf[dst + 2] as u32 * inv_a) / 255) as u8;
         }
 
         result

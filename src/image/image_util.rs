@@ -3,8 +3,8 @@ use crate::image::image_config::ImageConfig;
 use crate::image::image_size::ImageSize;
 use crate::image::loaded_image::{LoadedImageF32, LoadedImageU8};
 use crate::image::{DEFAULT_MEAN, DEFAULT_STD};
-use image::{ImageBuffer, ImageError, Pixel, Rgb};
-use ndarray::{Array4, s};
+use image::{ImageBuffer, ImageError, Rgb};
+use ndarray::Array4;
 use raqote::SolidSource;
 use std::collections::HashMap;
 use std::path::Path;
@@ -79,9 +79,17 @@ fn resize_and_pad_image(
     let mut padded_image =
         ImageBuffer::from_pixel(target_size.width, target_size.height, padding_pixel);
 
-    // Copy resized image to center of padded image
-    for (x, y, pixel) in resized_image.enumerate_pixels() {
-        padded_image.put_pixel(x + pad_left, y + pad_top, *pixel);
+    // Copy resized image to center using direct row-based memcpy
+    let row_bytes = (new_width as usize) * 3;
+    let target_stride = (target_size.width as usize) * 3;
+    let src_buf = resized_image.as_raw();
+    let dst_buf = padded_image.as_mut();
+
+    for y in 0..new_height as usize {
+        let src_offset = y * row_bytes;
+        let dst_offset = (y + pad_top as usize) * target_stride + (pad_left as usize) * 3;
+        dst_buf[dst_offset..dst_offset + row_bytes]
+            .copy_from_slice(&src_buf[src_offset..src_offset + row_bytes]);
     }
 
     padded_image
@@ -89,15 +97,24 @@ fn resize_and_pad_image(
 
 /// Converts `ImageBuffer` to ndarray with NCHW format
 fn image_to_array(image: &ImageBuffer<Rgb<u8>, Vec<u8>>, size: ImageSize) -> Array4<u8> {
-    Array4::from_shape_fn(
-        (1, 3, size.height as usize, size.width as usize),
-        |(_, c, y, x)| {
-            let pixel =
-                image.get_pixel(u32::try_from(x).unwrap_or(0), u32::try_from(y).unwrap_or(0));
+    let h = size.height as usize;
+    let w = size.width as usize;
+    let hw = h * w;
+    let raw = image.as_raw();
 
-            pixel.channels()[c]
-        },
-    )
+    // Pre-allocate flat buffer for NCHW layout and fill in a single pass
+    let mut data = vec![0u8; 3 * hw];
+    let (ch_r, rest) = data.split_at_mut(hw);
+    let (ch_g, ch_b) = rest.split_at_mut(hw);
+
+    for i in 0..hw {
+        let src = i * 3;
+        ch_r[i] = raw[src];
+        ch_g[i] = raw[src + 1];
+        ch_b[i] = raw[src + 2];
+    }
+
+    Array4::from_shape_vec((1, 3, h, w), data).expect("Failed to create NCHW array")
 }
 
 /// Normalizes the image using the provided mean and std deviation.
@@ -109,13 +126,30 @@ pub fn normalize_image_f32(
     let mean = mean.unwrap_or(DEFAULT_MEAN);
     let std = std.unwrap_or(DEFAULT_STD);
 
-    let mut array = loaded_image.image_array.mapv(|x| f32::from(x) / 255.0);
+    let shape = loaded_image.image_array.shape();
+    let h = shape[2];
+    let w = shape[3];
+    let hw = h * w;
+
+    // Pre-compute scale and offset per channel: result = (x / 255.0 - mean) / std = x * scale + offset
+    let scale: [f32; 3] = std::array::from_fn(|c| 1.0 / (255.0 * std[c]));
+    let offset: [f32; 3] = std::array::from_fn(|c| -mean[c] / std[c]);
+
+    let src = loaded_image.image_array.as_slice().unwrap();
+    let mut data = vec![0.0f32; 3 * hw];
 
     for c in 0..3 {
-        array
-            .slice_mut(s![0, c, .., ..])
-            .mapv_inplace(|x| (x - mean[c]) / std[c]);
+        let s = scale[c];
+        let o = offset[c];
+        let src_slice = &src[c * hw..(c + 1) * hw];
+        let dst_slice = &mut data[c * hw..(c + 1) * hw];
+        for i in 0..hw {
+            dst_slice[i] = src_slice[i] as f32 * s + o;
+        }
     }
+
+    let array = Array4::from_shape_vec((1, 3, h, w), data)
+        .expect("Failed to create normalized array");
 
     LoadedImageF32 {
         image_array: array,

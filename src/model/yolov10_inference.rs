@@ -1,6 +1,6 @@
 use crate::detection::BoundingBox;
 use crate::model::inference::YoloInference;
-use ndarray::Array;
+use ndarray::ArrayViewD;
 
 /// `YOLOv10` inference implementation
 pub struct Yolov10Inference;
@@ -8,7 +8,7 @@ pub struct Yolov10Inference;
 impl YoloInference for Yolov10Inference {
     fn parse_output(
         &self,
-        output: &Array<f32, ndarray::IxDyn>,
+        output: ArrayViewD<'_, f32>,
         confidence_threshold: f32,
     ) -> Vec<BoundingBox> {
         let shape = output.shape();

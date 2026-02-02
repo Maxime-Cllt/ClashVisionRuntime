@@ -4,14 +4,14 @@ use crate::detection::BoundingBox;
 use crate::model::yolo_type::YoloType;
 use crate::model::yolov8_inference::Yolov8Inference;
 use crate::model::yolov10_inference::Yolov10Inference;
-use ndarray::Array;
+use ndarray::ArrayViewD;
 
 /// Trait for YOLO model inference
 pub trait YoloInference {
     /// Parses the model output to extract bounding boxes
     fn parse_output(
         &self,
-        output: &Array<f32, ndarray::IxDyn>,
+        output: ArrayViewD<'_, f32>,
         confidence_threshold: f32,
     ) -> Vec<BoundingBox>;
 }
