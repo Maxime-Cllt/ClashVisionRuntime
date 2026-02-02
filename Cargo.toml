@@ -58,12 +58,12 @@ strip = "symbols"     # Strip debug symbols to reduce binary size
 
 [profile.bench]
 # Benchmark profile for performance testing
-incremental = true # Enable incremental compilation for faster benchmark builds
-opt-level = 2  # Optimize for speed
+incremental = false # Disable for best optimization
+opt-level = 3  # Maximum optimization (matches release)
 debug = false  # No debug info in benchmark builds
 overflow-checks = false  # Disable overflow checks for performance
-lto = true  # Enable Link Time Optimization for better performance
-codegen-units = 4  # Merge codegen units for better optimization (can increase
+lto = "fat"  # Fat LTO for best performance (matches release)
+codegen-units = 1  # Single codegen unit for best optimization
 panic = "unwind" # Use unwind strategy to get better backtraces.
 
 

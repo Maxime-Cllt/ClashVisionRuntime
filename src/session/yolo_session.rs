@@ -89,14 +89,14 @@ impl YoloSession {
             .collect::<Result<_, _>>()
             .map_err(|e| SessionError::Inference(format!("Shape conversion error: {e}")))?;
 
-        // Build ndarray from ONNX tensor
-        let output = ndarray::Array::from_shape_vec(shape_usize, data.to_vec())
-            .map_err(|e| SessionError::Inference(format!("Failed to build ndarray: {e}")))?;
+        // Build ndarray view from ONNX tensor (zero-copy)
+        let output = ndarray::ArrayViewD::from_shape(shape_usize, &data)
+            .map_err(|e| SessionError::Inference(format!("Failed to build ndarray view: {e}")))?;
 
         // Parse output using appropriate inference implementation
         let boxes = self
             .inference
-            .parse_output(&output, self.config.confidence_threshold);
+            .parse_output(output, self.config.confidence_threshold);
 
         Ok(boxes)
     }
@@ -109,19 +109,25 @@ impl YoloSession {
         let loaded_image = load_image_u8_default(image_path, self.config.input_size)
             .map_err(|e| SessionError::ImageProcessing(format!("Failed to load image:{e}")))?;
 
-        let interleaved_data: Vec<u8> = loaded_image
-            .image_array
-            .view()
-            .to_shape((
-                3,
-                loaded_image.size.height as usize,
-                loaded_image.size.width as usize,
-            ))
-            .map_err(|e| SessionError::ImageProcessing(format!("Failed to reshape image: {e}")))?
-            .permuted_axes((1, 2, 0))
-            .iter()
-            .copied()
-            .collect();
+        // Convert NCHW to interleaved HWC using direct buffer access
+        let src = loaded_image.image_array.as_slice().ok_or_else(|| {
+            SessionError::ImageProcessing("Image array not contiguous".to_string())
+        })?;
+        let h = loaded_image.size.height as usize;
+        let w = loaded_image.size.width as usize;
+        let hw = h * w;
+        let mut interleaved_data = vec![0u8; hw * 3];
+
+        let ch_r = &src[0..hw];
+        let ch_g = &src[hw..2 * hw];
+        let ch_b = &src[2 * hw..3 * hw];
+
+        for i in 0..hw {
+            let dst = i * 3;
+            interleaved_data[dst] = ch_r[i];
+            interleaved_data[dst + 1] = ch_g[i];
+            interleaved_data[dst + 2] = ch_b[i];
+        }
 
         let img = RgbImage::from_raw(
             loaded_image.size.width,

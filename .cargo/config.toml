@@ -1,6 +1,8 @@
 [build]
 rustflags = [
-    "-C", "target-feature=+crt-static",
+    "-C", "target-feature=+crt-static", # Statically link the C runtime
+    "-C", "target-cpu=native", # Optimize for the build machine's CPU
+    "-C", "link-arg=-s", # Strip symbols to reduce binary size
 ]
 
 # Linux x86_64 - targets CPUs from ~2009+

@@ -31,8 +31,10 @@ impl OrtInferenceSession {
         input_image: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
     ) -> ort::Result<SessionOutputs<'_>> {
         let shape: Vec<usize> = input_image.shape().to_vec();
-        let raw_data: Vec<f32> = input_image.as_slice().unwrap().to_vec();
-        let input_tensor: Tensor<f32> = Tensor::from_array((shape, raw_data.into_boxed_slice()))?;
+        // Use as_standard_layout to get contiguous data, then avoid extra copy if already contiguous
+        let contiguous = input_image.as_standard_layout();
+        let raw_data: Box<[f32]> = contiguous.as_slice().unwrap().to_vec().into_boxed_slice();
+        let input_tensor: Tensor<f32> = Tensor::from_array((shape, raw_data))?;
 
         let input_value: SessionInputValue = SessionInputValue::Owned(Value::from(input_tensor));
         let inputs: Vec<(Cow<str>, SessionInputValue)> =

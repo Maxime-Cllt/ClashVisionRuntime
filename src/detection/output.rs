@@ -2,6 +2,7 @@
 
 use super::bbox::BoundingBox;
 use serde::Serialize;
+use std::fmt::Write as _;
 use std::fs;
 use std::io::{self};
 use std::path::Path;
@@ -113,11 +114,12 @@ impl OutputFormat {
             let norm_width = width / img_width_f;
             let norm_height = height / img_height_f;
 
-            // Format with appropriate precision
-            yolo_output.push_str(&format!(
+            // Format with appropriate precision (write! avoids intermediate String allocation)
+            let _ = write!(
+                yolo_output,
                 "{} {:.6} {:.6} {:.6} {:.6}\n",
                 bbox.class_id, norm_center_x, norm_center_y, norm_width, norm_height
-            ));
+            );
         }
 
         fs::write(output_path, yolo_output)
