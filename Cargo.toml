@@ -70,4 +70,4 @@ panic = "unwind" # Use unwind strategy to get better backtraces.
 [[bench]]
 name = "benchmark_application"
 harness = false
-path = "src/benches/application_bench.rs"
+path = "benches/application_bench.rs"
