@@ -15,12 +15,13 @@ ndarray = "0.17.2"
 ort = { version = "2.0.0-rc.10", features = [
     "download-binaries",
     "coreml",
+    "load-dynamic"
 ] }
 raqote = "0.8.4"
 thiserror = "2.0.17"
 serde_json = "1.0.145"
 serde = { version = "1.0.228", features = ["derive"] }
-fast_image_resize = { version = "5", features = ["image"] }
+fast_image_resize = { version = "6.0.0", features = ["image"] }
 num_cpus = "1"
 mimalloc = { version = "0.1", default-features = false }
 
