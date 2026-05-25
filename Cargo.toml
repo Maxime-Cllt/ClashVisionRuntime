@@ -1,6 +1,6 @@
 [package]
 name = "ClashVisionRuntime"
-version = "0.7.1"
+version = "0.8.0"
 license = "GPL-3.0"
 repository = "https://github.com/Maxime-Cllt/ClashVisionRuntime.git"
 categories = ["accessibility", "command-line-interface"]
@@ -11,7 +11,7 @@ edition = "2024"
 
 [dependencies]
 image = "0.25.8"
-ndarray = "0.16.1"
+ndarray = "0.17.2"
 ort = { version = "2.0.0-rc.10", features = ["download-binaries", "load-dynamic"] }
 raqote = "0.8.4"
 thiserror = "2.0.17"
@@ -20,7 +20,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 
 
 [dev-dependencies]
-criterion = "^0.7.0"
+criterion = "0.8.2"
 tempfile = "3.23.0"
 
 [lib]
