@@ -12,11 +12,17 @@ edition = "2024"
 [dependencies]
 image = "0.25.8"
 ndarray = "0.17.2"
-ort = { version = "2.0.0-rc.10", features = ["download-binaries", "load-dynamic"] }
+ort = { version = "2.0.0-rc.10", features = [
+    "download-binaries",
+    "coreml",
+] }
 raqote = "0.8.4"
 thiserror = "2.0.17"
 serde_json = "1.0.145"
 serde = { version = "1.0.228", features = ["derive"] }
+fast_image_resize = { version = "5", features = ["image"] }
+num_cpus = "1"
+mimalloc = { version = "0.1", default-features = false }
 
 
 [dev-dependencies]
@@ -57,14 +63,13 @@ strip = "symbols"     # Strip debug symbols to reduce binary size
 
 
 [profile.bench]
-# Benchmark profile for performance testing
-incremental = false # Disable for best optimization
-opt-level = 3  # Maximum optimization (matches release)
-debug = false  # No debug info in benchmark builds
-overflow-checks = false  # Disable overflow checks for performance
-lto = "fat"  # Fat LTO for best performance (matches release)
-codegen-units = 1  # Single codegen unit for best optimization
-panic = "unwind" # Use unwind strategy to get better backtraces.
+# Benchmark profile for performance testing (matches release)
+incremental = false
+opt-level = 3
+debug = false
+overflow-checks = false
+lto = "fat"
+codegen-units = 1
 
 
 [[bench]]

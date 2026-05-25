@@ -1,8 +1,8 @@
 pub mod image_config;
-mod image_size;
+pub(crate) mod image_size;
 pub mod image_util;
 pub mod loaded_image;
-mod norm_config;
+pub(crate) mod norm_config;
 
 // ImageNet normalization constants - commonly used in computer vision
 const IMAGENET_MEAN: [f32; 3] = [0.485, 0.456, 0.406];

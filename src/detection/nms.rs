@@ -51,26 +51,29 @@ pub fn nms_class_agnostic(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<Boun
     nms(boxes, iou_threshold)
 }
 
-/// Performs per-class NMS
+/// Performs per-class NMS.
+/// Groups boxes by class_id into a Vec (cheaper than HashMap for small class counts),
+/// runs NMS per class, then sorts the merged result by confidence.
 #[must_use]
 pub fn nms_per_class(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
-    use std::collections::HashMap;
+    if boxes.is_empty() {
+        return Vec::new();
+    }
 
-    let mut class_boxes: HashMap<usize, Vec<BoundingBox>> = HashMap::new();
+    let max_class = boxes.iter().map(|b| b.class_id).max().unwrap_or(0);
+    let mut buckets: Vec<Vec<BoundingBox>> = (0..=max_class).map(|_| Vec::new()).collect();
 
-    // Group boxes by class
     for &bbox in boxes {
-        class_boxes.entry(bbox.class_id).or_default().push(bbox);
+        buckets[bbox.class_id].push(bbox);
     }
 
-    let mut result = Vec::new();
-
-    // Apply NMS per class
-    for boxes_for_class in class_boxes.values() {
-        result.extend(nms(boxes_for_class, iou_threshold));
+    let mut result = Vec::with_capacity(boxes.len());
+    for bucket in &buckets {
+        if !bucket.is_empty() {
+            result.extend(nms(bucket, iou_threshold));
+        }
     }
 
-    // Sort final result by confidence
     result.sort_by(|a, b| {
         b.confidence
             .partial_cmp(&a.confidence)

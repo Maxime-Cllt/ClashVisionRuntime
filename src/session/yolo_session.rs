@@ -2,15 +2,13 @@ use crate::detection::BoundingBox;
 use crate::detection::nms::{nms, nms_per_class};
 use crate::detection::output::OutputFormat;
 use crate::detection::visualization::DrawConfig;
-use crate::image::image_util::load_image_u8_default;
-use crate::image::image_util::normalize_image_f32;
-use crate::image::loaded_image::LoadedImageU8;
-use crate::model::inference::{YoloInference, create_inference};
+use crate::image::image_util::load_and_preprocess_f32;
+use crate::model::inference::{YoloInferenceImpl, create_inference};
 use crate::model::yolo_type::YoloType;
 use crate::session::SessionError;
 use crate::session::ort_inference_session::OrtInferenceSession;
 use crate::session::session_config::SessionConfig;
-use image::{DynamicImage, RgbImage};
+use image::RgbImage;
 use ndarray::Array4;
 use ort::session::SessionOutputs;
 use std::path::Path;
@@ -20,7 +18,7 @@ use std::path::Path;
 pub struct YoloSession {
     session: OrtInferenceSession,
     config: SessionConfig,
-    inference: Box<dyn YoloInference>,
+    inference: YoloInferenceImpl,
 }
 
 impl YoloSession {
@@ -68,14 +66,15 @@ impl YoloSession {
         })
     }
 
-    /// Runs inference on the preprocessed input tensor
+    /// Runs inference on the preprocessed input tensor.
+    /// Takes ownership of the tensor for zero-copy transfer to ONNX Runtime.
     pub fn run_inference(
         &mut self,
         input_tensor: Array4<f32>,
     ) -> Result<Vec<BoundingBox>, SessionError> {
         let outputs: SessionOutputs = self
             .session
-            .run_inference(&input_tensor)
+            .run_inference(input_tensor)
             .map_err(|e| SessionError::Inference(e.to_string()))?;
 
         let (shape, data) = outputs["output0"]
@@ -99,46 +98,6 @@ impl YoloSession {
             .parse_output(output, self.config.confidence_threshold);
 
         Ok(boxes)
-    }
-
-    /// Loads and preprocesses an image
-    pub fn load_and_preprocess_image(
-        &self,
-        image_path: &str,
-    ) -> Result<(RgbImage, LoadedImageU8), SessionError> {
-        let loaded_image = load_image_u8_default(image_path, self.config.input_size)
-            .map_err(|e| SessionError::ImageProcessing(format!("Failed to load image:{e}")))?;
-
-        // Convert NCHW to interleaved HWC using direct buffer access
-        let src = loaded_image.image_array.as_slice().ok_or_else(|| {
-            SessionError::ImageProcessing("Image array not contiguous".to_string())
-        })?;
-        let h = loaded_image.size.height as usize;
-        let w = loaded_image.size.width as usize;
-        let hw = h * w;
-        let mut interleaved_data = vec![0u8; hw * 3];
-
-        let ch_r = &src[0..hw];
-        let ch_g = &src[hw..2 * hw];
-        let ch_b = &src[2 * hw..3 * hw];
-
-        for i in 0..hw {
-            let dst = i * 3;
-            interleaved_data[dst] = ch_r[i];
-            interleaved_data[dst + 1] = ch_g[i];
-            interleaved_data[dst + 2] = ch_b[i];
-        }
-
-        let img = RgbImage::from_raw(
-            loaded_image.size.width,
-            loaded_image.size.height,
-            interleaved_data,
-        )
-        .ok_or_else(|| {
-            SessionError::ImageProcessing("Failed to create image from raw data".to_string())
-        })?;
-
-        Ok((img, loaded_image))
     }
 
     /// Saves detection outputs
@@ -185,16 +144,23 @@ impl YoloSession {
         self.process_image_with_output_dir(image_path, None)
     }
 
-    /// Processes an image with custom output directory
+    /// Processes an image with custom output directory.
+    /// Uses fused preprocessing pipeline for maximum performance.
     pub fn process_image_with_output_dir(
         &mut self,
         image_path: &str,
         output_dir: Option<&str>,
     ) -> Result<(), SessionError> {
-        let (original_image, loaded_image) = self.load_and_preprocess_image(image_path)?;
+        // Fused pipeline: load + resize + pad + normalize in one go
+        let (original_image, normalized) = load_and_preprocess_f32(
+            image_path,
+            self.config.input_size,
+            None,
+            None,
+        )
+        .map_err(|e| SessionError::ImageProcessing(format!("Failed to preprocess image: {e}")))?;
 
-        let normalized_image = normalize_image_f32(&loaded_image, None, None);
-        let mut inferred_boxes = self.run_inference(normalized_image.image_array)?;
+        let mut inferred_boxes = self.run_inference(normalized.image_array)?;
 
         // Apply NMS if enabled
         if self.config.use_nms {
@@ -205,9 +171,9 @@ impl YoloSession {
             };
         }
 
-        // Draw boxes with custom configuration
+        // Draw boxes — original_image is consumed and boxes are drawn in place
         let result_image = DrawConfig::draw_boxes(
-            &DynamicImage::ImageRgb8(original_image),
+            original_image,
             &inferred_boxes,
             self.config.input_size,
         );

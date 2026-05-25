@@ -28,6 +28,32 @@ impl Serialize for OutputFormat {
     }
 }
 
+#[derive(Serialize)]
+struct CocoImage<'a> {
+    width: u32,
+    height: u32,
+    file_name: &'a str,
+}
+
+#[derive(Serialize)]
+struct CocoDetection {
+    id: usize,
+    category_id: usize,
+    x1: f32,
+    y1: f32,
+    x2: f32,
+    y2: f32,
+    width: f32,
+    height: f32,
+    score: f32,
+}
+
+#[derive(Serialize)]
+struct CocoOutput<'a> {
+    images: [CocoImage<'a>; 1],
+    detections: Vec<CocoDetection>,
+}
+
 impl OutputFormat {
     /// Outputs detection results in different formats
     pub fn output_detections(
@@ -48,42 +74,48 @@ impl OutputFormat {
         }
     }
 
-    /// Outputs in COCO JSON format to a json file
+    /// Outputs in COCO-like JSON via a typed Serialize struct (no `json!` macro overhead).
     fn output_to_coco_json(
         boxes: &[BoundingBox],
         image_dimensions: (u32, u32),
         output_path: &Path,
     ) -> io::Result<()> {
-        let stub = serde_json::json!({
-            "images": [{
-                "width": image_dimensions.0,
-                "height": image_dimensions.1,
-                "file_name": output_path.file_stem().unwrap().to_str().unwrap()
+        let file_name = output_path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("");
+
+        let detections: Vec<CocoDetection> = boxes
+            .iter()
+            .enumerate()
+            .map(|(i, bbox)| {
+                let (width, height) = bbox.dimensions();
+                CocoDetection {
+                    id: i + 1,
+                    category_id: bbox.class_id,
+                    x1: bbox.x1,
+                    y1: bbox.y1,
+                    x2: bbox.x2,
+                    y2: bbox.y2,
+                    width,
+                    height,
+                    score: bbox.confidence,
+                }
+            })
+            .collect();
+
+        let output = CocoOutput {
+            images: [CocoImage {
+                width: image_dimensions.0,
+                height: image_dimensions.1,
+                file_name,
             }],
-            "detections": [],
-        });
+            detections,
+        };
 
-        // Loop through boxes and add to detections
-        let mut detections = Vec::new();
-        for (i, bbox) in boxes.iter().enumerate() {
-            let (width, height) = bbox.dimensions();
-            detections.push(serde_json::json!({
-                "id": i + 1,
-                "category_id": bbox.class_id,
-                "x1": bbox.x1,
-                "y1": bbox.y1,
-                "x2": bbox.x2,
-                "y2": bbox.y2,
-                "width": width,
-                "height": height,
-                "score": bbox.confidence,
-            }));
-        }
-        let mut output = stub;
-        output["detections"] = serde_json::Value::Array(detections);
-        fs::write(output_path, serde_json::to_string_pretty(&output).unwrap())?;
-
-        Ok(())
+        let json = serde_json::to_string_pretty(&output)
+            .map_err(|e| io::Error::other(format!("JSON serialization failed: {e}")))?;
+        fs::write(output_path, json)
     }
 
     /// Outputs normalized YOLO format with error handling
@@ -100,24 +132,21 @@ impl OutputFormat {
         let img_width_f = image_width as f32;
         let img_height_f = image_height as f32;
 
-        // Pre-allocate string with estimated capacity
-        let estimated_size = boxes.len() * 50; // Rough estimate: 50 chars per line
+        let estimated_size = boxes.len() * 50;
         let mut yolo_output = String::with_capacity(estimated_size);
 
         for bbox in boxes {
             let (center_x, center_y) = bbox.center();
             let (width, height) = bbox.dimensions();
 
-            // Normalize coordinates
             let norm_center_x = center_x / img_width_f;
             let norm_center_y = center_y / img_height_f;
             let norm_width = width / img_width_f;
             let norm_height = height / img_height_f;
 
-            // Format with appropriate precision (write! avoids intermediate String allocation)
-            let _ = write!(
+            let _ = writeln!(
                 yolo_output,
-                "{} {:.6} {:.6} {:.6} {:.6}\n",
+                "{} {:.6} {:.6} {:.6} {:.6}",
                 bbox.class_id, norm_center_x, norm_center_y, norm_width, norm_height
             );
         }

@@ -9,6 +9,10 @@ pub mod image;
 pub mod model;
 pub mod session;
 
+// Use mimalloc for better allocation performance in ML workloads
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 // Embed the model at compile time
 pub const MODEL_BYTES: &[u8] = include_bytes!("../models/best.onnx");
 

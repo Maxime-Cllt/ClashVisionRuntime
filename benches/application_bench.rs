@@ -3,25 +3,21 @@ use clashvision::model::yolo_type::YoloType;
 use clashvision::session::yolo_session::YoloSession;
 use criterion::{Criterion, criterion_group, criterion_main};
 
-#[allow(dead_code)]
-fn bench_process_image() {
-    const IMAGE_PATH: &str = "assets/village_1759583099.png";
+const IMAGE_PATH: &str = "assets/village_1759583099.png";
 
-    // Use the embedded model bytes
+fn benchmark_application(c: &mut Criterion) {
+    // Session creation (model load + EP init) happens ONCE, outside the timed loop.
+    // The previous version recreated the session per iteration, so the benchmark was
+    // dominated by model loading, not inference.
     let mut yolo_model = YoloSession::from_bytes(MODEL_BYTES, YoloType::YoloV8)
         .expect("Failed to create YOLO model from embedded bytes");
 
-    yolo_model
-        .process_image(IMAGE_PATH)
-        .expect("Failed to process image");
-}
-
-#[allow(dead_code)]
-fn benchmark_application(c: &mut Criterion) {
     let mut group = c.benchmark_group("benchmark_application");
-    group.bench_function("test_process_image", |b| {
+    group.bench_function("process_image", |b| {
         b.iter(|| {
-            bench_process_image();
+            yolo_model
+                .process_image(IMAGE_PATH)
+                .expect("Failed to process image");
         })
     });
 

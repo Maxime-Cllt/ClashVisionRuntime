@@ -1,36 +1,35 @@
 [build]
 rustflags = [
-    "-C", "target-feature=+crt-static", # Statically link the C runtime
     "-C", "target-cpu=native", # Optimize for the build machine's CPU
-    "-C", "link-arg=-s", # Strip symbols to reduce binary size
 ]
 
-# Linux x86_64 - targets CPUs from ~2009+
+# Linux x86_64 - targets CPUs from ~2013+ (Haswell, AVX2 + FMA) for ML perf
 [target.x86_64-unknown-linux-gnu]
 rustflags = [
-    "-C", "target-cpu=x86-64-v2",
+    "-C", "target-cpu=x86-64-v3",
     "-C", "target-feature=+crt-static",
     "-C", "link-arg=-s",
 ]
 
-# Windows x86_64 - targets CPUs from ~2009+
+# Windows x86_64 (prod) - targets CPUs from ~2013+ (Haswell, AVX2 + FMA)
 [target.x86_64-pc-windows-msvc]
 rustflags = [
-    "-C", "target-cpu=x86-64-v2",
+    "-C", "target-cpu=x86-64-v3",
     "-C", "target-feature=+crt-static",
 ]
 
-# macOS Intel - baseline x86_64 for compatibility
+# macOS Intel - Haswell+ baseline; macOS itself dropped pre-Haswell Macs
 [target.x86_64-apple-darwin]
 rustflags = [
+    "-C", "target-cpu=haswell",
     "-C", "link-arg=-dead_strip",
     "-C", "link-arg=-dead_strip_dylibs",
 ]
 
-# macOS Apple Silicon - all M1/M2/M3+ chips
+# macOS Apple Silicon (dev = M2 Pro) - tune for M2; binary still runs on M1/M3/M4
 [target.aarch64-apple-darwin]
 rustflags = [
-    "-C", "target-cpu=apple-m1",
+    "-C", "target-cpu=apple-m2",
     "-C", "link-arg=-dead_strip",
     "-C", "link-arg=-dead_strip_dylibs",
 ]

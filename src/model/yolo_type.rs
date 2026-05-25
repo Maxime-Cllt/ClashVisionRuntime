@@ -23,10 +23,12 @@ impl TryFrom<&str> for YoloType {
     type Error = ();
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value.to_lowercase().as_str() {
-            "yolov8" => Ok(Self::YoloV8),
-            "yolov10" => Ok(Self::YoloV10),
-            _ => Err(()),
+        if value.eq_ignore_ascii_case("yolov8") {
+            Ok(Self::YoloV8)
+        } else if value.eq_ignore_ascii_case("yolov10") {
+            Ok(Self::YoloV10)
+        } else {
+            Err(())
         }
     }
 }
