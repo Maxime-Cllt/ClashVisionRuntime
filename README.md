@@ -4,16 +4,17 @@
 </div>
 <div align="center">
   <!-- Rust -->
-    <img src="https://img.shields.io/badge/Rust-dea584?style=for-the-badge&logo=rust&logoColor=white" alt="Rust" />
-
+  <img src="https://img.shields.io/badge/Rust-dea584?style=for-the-badge&logo=rust&logoColor=white" alt="Rust" />
   <!-- ONNX Runtime -->
   <img src="https://img.shields.io/badge/ONNX_Runtime-005CED?style=for-the-badge&logo=onnx&logoColor=white" alt="ONNX Runtime" />
+</div>
 
-  <!-- Version -->
-  <img src="https://img.shields.io/badge/Version-0.7.1-6c63ff?style=for-the-badge" alt="Version" />
-
-  <!-- License -->
-  <img src="https://img.shields.io/badge/License-GPL--3.0-3C8DAD?style=for-the-badge&logo=open-source-initiative&logoColor=white" alt="License" />
+<div align="center">
+  <!-- Stack -->
+  <img src="https://img.shields.io/badge/serde-DC382D?style=for-the-badge" alt="Serde" />
+  <img src="https://img.shields.io/badge/ndarray-4C8BF5?style=for-the-badge" alt="ndarray" />
+  <img src="https://img.shields.io/badge/image-FF6F00?style=for-the-badge" alt="image" />
+  <img src="https://img.shields.io/badge/raqote-7B5EA7?style=for-the-badge" alt="raqote" />
 </div>
 
 ## 🚀 Overview
@@ -34,8 +35,21 @@ Clash of Clans.
 
 ### Required Tools
 
-- **[Rust](https://www.rust-lang.org/tools/install)**
-- **[ONNX Library](https://onnxruntime.ai/docs/build/)**
+- **[Rust](https://www.rust-lang.org/tools/install)** (if building from source)
+- **[ONNX Runtime](https://onnxruntime.ai/docs/build/)** (for custom builds)
+
+### Supported Platforms
+
+Prebuilt binaries are available for the following platforms
+via [GitHub Releases](https://github.com/Maxime-Cllt/ClashVisionRuntime/releases):
+
+| Platform | Architecture | Status      |
+|----------|--------------|-------------|
+| Linux    | x86_64       | ✅ Supported |
+| macOS    | x86_64       | ✅ Supported |
+| macOS    | aarch64      | ✅ Supported |
+| Windows  | x86_64       | ✅ Supported |
+| Windows  | aarch64      | ✅ Supported |
 
 ## 🚀 Usage
 
@@ -44,12 +58,21 @@ Clash of Clans.
 ```bash
 # Using cargo (development)
 cargo run --release -- "path/to/image.png"
+
+# Using the prebuilt binary
+./ClashVisionRuntime "path/to/image.png"
 ```
 
 ### Parameters
 
-- **Input File**: Path to the CSV file to be validated
-- **Output File**: Path where the JSON analysis report will be saved
+- **Input File**: Path to the image file to be analyzed (PNG, JPG, etc.)
+
+### Output
+
+By default, an `output/` directory is created containing:
+
+- `<image_name>.jpg` — the annotated image with bounding boxes drawn
+- `<image_name>.json` — the structured detection report
 
 ## 📊 Output Format
 
