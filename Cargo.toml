@@ -12,10 +12,12 @@ edition = "2024"
 [dependencies]
 image = "0.25.8"
 ndarray = "0.17.2"
-ort = { version = "2.0.0-rc.10", features = [
-    "download-binaries",
-    "coreml",
-] }
+# ONNX Runtime is statically linked from prebuilt binaries. Do NOT add `load-dynamic`:
+# it makes ort dlopen a system `onnxruntime` at runtime (wrong version → "Failed to
+# initialize ORT API" on Windows, re-entrant-init deadlock on macOS). `download-binaries`
+# alone embeds the matching ORT into the binary (no DLL to ship). CoreML is Apple-only,
+# added in the [target.'cfg(target_vendor = "apple")'.dependencies] section below.
+ort = { version = "2.0.0-rc.10", features = ["download-binaries"] }
 raqote = "0.8.4"
 thiserror = "2.0.17"
 serde_json = "1.0.145"
@@ -23,6 +25,12 @@ serde = { version = "1.0.228", features = ["derive"] }
 fast_image_resize = { version = "6.0.0", features = ["image"] }
 num_cpus = "1"
 mimalloc = { version = "0.1", default-features = false }
+
+# CoreML execution provider only exists on Apple platforms; the EP registration in
+# `session/ort_inference_session.rs` is `#[cfg(target_vendor = "apple")]`. Enabling the
+# `coreml` ort feature only here keeps Windows/Linux on a clean download-binaries (static) build.
+[target.'cfg(target_vendor = "apple")'.dependencies]
+ort = { version = "2.0.0-rc.10", features = ["coreml"] }
 
 
 [dev-dependencies]
