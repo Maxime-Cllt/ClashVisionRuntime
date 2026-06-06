@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-pub mod ort_inference_session;
+pub mod inference_session;
 pub(crate) mod session_config;
 pub mod yolo_session;
 

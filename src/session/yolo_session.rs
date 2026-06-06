@@ -6,17 +6,16 @@ use crate::image::image_util::load_and_preprocess_f32;
 use crate::model::inference::{YoloInferenceImpl, create_inference};
 use crate::model::yolo_type::YoloType;
 use crate::session::SessionError;
-use crate::session::ort_inference_session::OrtInferenceSession;
+use crate::session::inference_session::InferenceSession;
 use crate::session::session_config::SessionConfig;
 use image::RgbImage;
 use ndarray::Array4;
-use ort::session::SessionOutputs;
 use std::path::Path;
 
 /// YOLO session struct for managing model inference and image processing
 #[must_use]
 pub struct YoloSession {
-    session: OrtInferenceSession,
+    session: InferenceSession,
     config: SessionConfig,
     inference: YoloInferenceImpl,
 }
@@ -33,9 +32,8 @@ impl YoloSession {
         model_type: &YoloType,
         config: SessionConfig,
     ) -> Result<Self, SessionError> {
-        let session = OrtInferenceSession::new(Path::new(model_path))
-            .map_err(|e| SessionError::Io(std::io::Error::other(e)))?;
-        let inference = create_inference(&model_type);
+        let session = InferenceSession::from_path(Path::new(model_path), config.input_size)?;
+        let inference = create_inference(model_type);
 
         Ok(Self {
             session,
@@ -55,9 +53,8 @@ impl YoloSession {
         model_type: &YoloType,
         config: SessionConfig,
     ) -> Result<Self, SessionError> {
-        let session = OrtInferenceSession::from_bytes(model_bytes)
-            .map_err(|e| SessionError::Io(std::io::Error::other(e)))?;
-        let inference = create_inference(&model_type);
+        let session = InferenceSession::from_bytes(model_bytes, config.input_size)?;
+        let inference = create_inference(model_type);
 
         Ok(Self {
             session,
@@ -66,36 +63,17 @@ impl YoloSession {
         })
     }
 
-    /// Runs inference on the preprocessed input tensor.
-    /// Takes ownership of the tensor for zero-copy transfer to ONNX Runtime.
+    /// Runs inference on the preprocessed input tensor and returns detected boxes.
     pub fn run_inference(
         &mut self,
         input_tensor: Array4<f32>,
     ) -> Result<Vec<BoundingBox>, SessionError> {
-        let outputs: SessionOutputs = self
-            .session
-            .run_inference(input_tensor)
-            .map_err(|e| SessionError::Inference(e.to_string()))?;
-
-        let (shape, data) = outputs["output0"]
-            .try_extract_tensor::<f32>()
-            .map_err(|e| SessionError::Inference(format!("Failed to extract tensor: {e}")))?;
-
-        // Convert i64 shape to usize for ndarray
-        let shape_usize: Vec<usize> = shape
-            .iter()
-            .map(|&dim| usize::try_from(dim))
-            .collect::<Result<_, _>>()
-            .map_err(|e| SessionError::Inference(format!("Shape conversion error: {e}")))?;
-
-        // Build ndarray view from ONNX tensor (zero-copy)
-        let output = ndarray::ArrayViewD::from_shape(shape_usize, &data)
-            .map_err(|e| SessionError::Inference(format!("Failed to build ndarray view: {e}")))?;
+        let output = self.session.run_inference(input_tensor)?;
 
         // Parse output using appropriate inference implementation
         let boxes = self
             .inference
-            .parse_output(output, self.config.confidence_threshold);
+            .parse_output(output.view(), self.config.confidence_threshold);
 
         Ok(boxes)
     }
