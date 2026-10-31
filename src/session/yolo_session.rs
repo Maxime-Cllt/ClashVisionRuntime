@@ -68,14 +68,10 @@ impl YoloSession {
         &mut self,
         input_tensor: Array4<f32>,
     ) -> Result<Vec<BoundingBox>, SessionError> {
-        let output = self.session.run_inference(input_tensor)?;
-
-        // Parse output using appropriate inference implementation
-        let boxes = self
-            .inference
-            .parse_output(output.view(), self.config.confidence_threshold);
-
-        Ok(boxes)
+        // Parse straight from tract's output buffer (no intermediate copy).
+        let (inference, threshold) = (&self.inference, self.config.confidence_threshold);
+        self.session
+            .run_inference_with(input_tensor, |output| inference.parse_output(output, threshold))
     }
 
     /// Saves detection outputs

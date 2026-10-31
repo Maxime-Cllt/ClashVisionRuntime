@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 pub mod inference_session;
-pub(crate) mod session_config;
+pub mod session_config;
 pub mod yolo_session;
 
 /// Session-specific errors

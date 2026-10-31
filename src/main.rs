@@ -1,3 +1,8 @@
+// Optional (`--features mimalloc`): the allocator is the binary's choice, never imposed by the library.
+#[cfg(feature = "mimalloc")]
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 use clashvision::model::yolo_type::YoloType;
 use clashvision::session::yolo_session::YoloSession;
 use clashvision::MODEL_BYTES;

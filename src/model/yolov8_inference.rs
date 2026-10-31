@@ -29,36 +29,75 @@ impl YoloInference for Yolov8Inference {
         };
 
         let stride = num_detections;
-        let mut boxes = Vec::with_capacity(64);
 
-        for det in 0..num_detections {
-            let mut max_class_id = 0usize;
-            let mut max_class_prob = raw[4 * stride + det];
-
-            for c in 1..num_classes {
-                let prob = raw[(4 + c) * stride + det];
-                if prob > max_class_prob {
-                    max_class_prob = prob;
-                    max_class_id = c;
+        // Class-major scan: for each class row, update the running best (prob, id) of every
+        // detection. Contiguous reads + branchless select, so the compiler can vectorize it
+        // (the detection-major loop strided by `num_detections` on every access).
+        let mut best_prob: Vec<f32> = raw[4 * stride..5 * stride].to_vec();
+        let mut best_class: Vec<u16> = vec![0; stride];
+        for c in 1..num_classes {
+            let row = &raw[(4 + c) * stride..(5 + c) * stride];
+            for ((prob, class), &value) in best_prob.iter_mut().zip(best_class.iter_mut()).zip(row)
+            {
+                if value > *prob {
+                    *prob = value;
+                    *class = c as u16;
                 }
             }
+        }
 
-            if max_class_prob > confidence_threshold {
-                let x = raw[det];
-                let y = raw[stride + det];
-                let w = raw[2 * stride + det];
-                let h = raw[3 * stride + det];
+        let mut boxes = Vec::with_capacity(64);
+        for det in 0..num_detections {
+            if best_prob[det] > confidence_threshold {
                 boxes.push(BoundingBox::from_center(
-                    x,
-                    y,
-                    w,
-                    h,
-                    max_class_id,
-                    max_class_prob,
+                    raw[det],
+                    raw[stride + det],
+                    raw[2 * stride + det],
+                    raw[3 * stride + det],
+                    usize::from(best_class[det]),
+                    best_prob[det],
                 ));
             }
         }
 
         boxes
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ndarray::Array3;
+
+    /// Straightforward detection-major reference implementation.
+    fn reference(raw: &Array3<f32>, threshold: f32) -> Vec<(usize, f32)> {
+        let (_, rows, dets) = raw.dim();
+        let mut out = Vec::new();
+        for d in 0..dets {
+            let (mut id, mut prob) = (0, raw[[0, 4, d]]);
+            for c in 1..rows - 4 {
+                if raw[[0, 4 + c, d]] > prob {
+                    prob = raw[[0, 4 + c, d]];
+                    id = c;
+                }
+            }
+            if prob > threshold {
+                out.push((id, prob));
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn class_major_scan_matches_reference() {
+        let (classes, dets) = (7, 50);
+        let raw = Array3::from_shape_fn((1, 4 + classes, dets), |(_, r, d)| {
+            // deterministic pseudo-random values, with ties between classes
+            (((r * 31 + d * 17) % 23) as f32) / 23.0
+        });
+
+        let boxes = Yolov8Inference.parse_output(raw.view().into_dyn(), 0.5);
+        let got: Vec<(usize, f32)> = boxes.iter().map(|b| (b.class_id, b.confidence)).collect();
+        assert_eq!(got, reference(&raw, 0.5));
     }
 }

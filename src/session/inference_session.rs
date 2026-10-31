@@ -1,6 +1,5 @@
 use crate::session::SessionError;
-use ndarray::{Array4, ArrayD, IxDyn};
-use std::path::Path;
+use ndarray::{Array4, ArrayD, ArrayViewD};
 use tract_onnx::prelude::*;
 
 /// Pure-Rust ONNX inference session backed by [tract](https://github.com/sonos/tract).
@@ -12,12 +11,13 @@ use tract_onnx::prelude::*;
 #[non_exhaustive]
 pub struct InferenceSession {
     /// Optimized, runnable tract plan. Built once; `run` borrows it immutably.
-    model: TypedRunnableModel<TypedModel>,
+    model: Arc<TypedRunnableModel>,
 }
 
 impl InferenceSession {
     /// Loads and optimizes an ONNX model from raw bytes, fixing the NCHW input shape
     /// to `(1, 3, height, width)` so tract can fully optimize the graph.
+    /// Inference is single-threaded: extra threads did not help on the reference model.
     pub fn from_bytes(model_bytes: &[u8], input_size: (u32, u32)) -> Result<Self, SessionError> {
         let (width, height) = input_size;
         let mut reader = std::io::Cursor::new(model_bytes);
@@ -36,24 +36,21 @@ impl InferenceSession {
     }
 
     /// Loads and optimizes an ONNX model from a file path.
-    pub fn from_path(model_path: &Path, input_size: (u32, u32)) -> Result<Self, SessionError> {
+    pub fn from_path(model_path: &std::path::Path, input_size: (u32, u32)) -> Result<Self, SessionError> {
         let bytes = std::fs::read(model_path)?;
         Self::from_bytes(&bytes, input_size)
     }
 
-    /// Runs inference on a preprocessed NCHW f32 tensor and returns the raw first model
-    /// output as a dynamic ndarray (e.g. YOLOv8 `output0`, shape `[1, 4 + classes, N]`).
-    pub fn run_inference(&self, input_image: Array4<f32>) -> Result<ArrayD<f32>, SessionError> {
-        // tract carries its own ndarray version, so we bridge via raw contiguous slices
-        // (input) and shape+slice (output) rather than passing ndarray types across the boundary.
-        let standard = input_image.as_standard_layout();
-        let shape = standard.shape().to_vec();
-        let slice: &[f32] = standard
-            .as_slice()
-            .ok_or_else(|| SessionError::Inference("input tensor is not contiguous".to_string()))?;
-
-        let input_tensor = Tensor::from_shape(&shape, slice)
-            .map_err(|e| SessionError::Inference(format!("failed to build input tensor: {e}")))?;
+    /// Runs inference on a preprocessed NCHW f32 tensor and hands the raw first model
+    /// output (e.g. YOLOv8 `output0`, shape `[1, 4 + classes, N]`) to `f` as a borrowed view,
+    /// so callers can parse it without copying the output buffer.
+    pub fn run_inference_with<R>(
+        &self,
+        input_image: Array4<f32>,
+        f: impl FnOnce(ArrayViewD<'_, f32>) -> R,
+    ) -> Result<R, SessionError> {
+        // ndarray is the same version as tract's, so the input is moved into the tensor.
+        let input_tensor: Tensor = input_image.into();
 
         let outputs = self
             .model
@@ -61,16 +58,19 @@ impl InferenceSession {
             .map_err(|e| SessionError::Inference(format!("tract inference failed: {e}")))?;
 
         let output = outputs
-            .into_iter()
-            .next()
+            .first()
             .ok_or_else(|| SessionError::Inference("model produced no output".to_string()))?;
 
-        let out_shape: Vec<usize> = output.shape().to_vec();
-        let out_slice: &[f32] = output
-            .as_slice::<f32>()
+        let view = output
+            .to_plain_array_view::<f32>()
             .map_err(|e| SessionError::Inference(format!("failed to read output tensor: {e}")))?;
 
-        ArrayD::from_shape_vec(IxDyn(&out_shape), out_slice.to_vec())
-            .map_err(|e| SessionError::Inference(format!("failed to build output array: {e}")))
+        Ok(f(view))
+    }
+
+    /// Runs inference and returns the raw first model output as an owned dynamic ndarray.
+    /// Prefer [`Self::run_inference_with`] on hot paths (this one copies the output).
+    pub fn run_inference(&self, input_image: Array4<f32>) -> Result<ArrayD<f32>, SessionError> {
+        self.run_inference_with(input_image, |view| view.to_owned())
     }
 }

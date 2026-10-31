@@ -16,27 +16,29 @@ pub fn nms(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
         return Vec::new();
     }
 
-    // Sort by confidence in descending order
-    let mut sorted_boxes = boxes.to_vec();
-    sorted_boxes.sort_by(|a, b| {
-        b.confidence
-            .partial_cmp(&a.confidence)
+    // Sort indices by confidence (descending, stable) instead of cloning the boxes.
+    let mut order: Vec<usize> = (0..boxes.len()).collect();
+    order.sort_by(|&a, &b| {
+        boxes[b]
+            .confidence
+            .partial_cmp(&boxes[a].confidence)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
 
     let mut result = Vec::with_capacity(boxes.len());
-    let mut suppressed = vec![false; sorted_boxes.len()];
+    let mut suppressed = vec![false; order.len()];
 
-    for (i, current_box) in sorted_boxes.iter().enumerate() {
+    for (i, &current_idx) in order.iter().enumerate() {
         if suppressed[i] {
             continue;
         }
 
+        let current_box = &boxes[current_idx];
         result.push(*current_box);
 
         // Suppress overlapping boxes
-        for (j, other_box) in sorted_boxes.iter().enumerate().skip(i + 1) {
-            if !suppressed[j] && current_box.iou(other_box) > iou_threshold {
+        for (j, &other_idx) in order.iter().enumerate().skip(i + 1) {
+            if !suppressed[j] && current_box.iou(&boxes[other_idx]) > iou_threshold {
                 suppressed[j] = true;
             }
         }

@@ -10,20 +10,28 @@ edition = "2024"
 
 
 [dependencies]
-image = "0.25.8"
-ndarray = "0.17.2"
+# Only the codecs actually used: png (inputs) and jpeg (annotated output in `process_image`).
+# image's default features would also compile avif/exr/tiff/gif/webp/bmp/... encoders+decoders.
+image = { version = "0.25.8", default-features = false, features = ["png", "jpeg"] }
+# Same major as tract's ndarray so tensors cross the tract boundary without copies/bridging.
+ndarray = "0.17"
 # Inference engine: tract is 100% pure Rust (no C/C++, no onnxruntime DLL). It loads the
 # embedded ONNX model and runs on CPU, so the whole crate links into a single static binary
 # with nothing to ship or install — critical for painless Windows deployment.
-tract-onnx = "0.21"
-raqote = "0.8.4"
+tract-onnx = "0.23"
+# Only rectangles are drawn: skip the default `text` feature (font-kit + platform font libs).
+raqote = { version = "0.8.4", default-features = false }
 thiserror = "2.0.17"
 serde_json = "1.0.145"
 serde = { version = "1.0.228", features = ["derive"] }
 fast_image_resize = { version = "6.0.0", features = ["image"] }
-num_cpus = "1"
-mimalloc = { version = "0.1", default-features = false }
+# Optional global allocator for the binary/benches (`--features mimalloc`). Never forced on library consumers.
+mimalloc = { version = "0.1", default-features = false, optional = true }
 
+
+[features]
+default = []
+mimalloc = ["dep:mimalloc"]
 
 [dev-dependencies]
 criterion = "0.8.2"
